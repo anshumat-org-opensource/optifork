@@ -1,3 +1,8 @@
-fastapi
-uvicorn
+fastapi[all]
+uvicorn[standard]
+sqlalchemy>=2.0
+aiosqlite
+greenlet
 pydantic
+schemas
+fastapi[all]
