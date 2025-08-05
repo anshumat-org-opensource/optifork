@@ -7,30 +7,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db import SessionLocal, engine
 from models import Base
 import crud
+from routers import experiment_router
 
 app = FastAPI()
 
 # ✅ Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or use ["http://localhost:5176"] for specific origin
+    allow_origins=["*"],  # Or restrict this in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ Create DB tables
+# ✅ Register experiment routes
+app.include_router(experiment_router.router)
+
+# ✅ Create DB tables on startup
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-# ✅ Dependency
+# ✅ Dependency to get DB session
 async def get_db():
     async with SessionLocal() as session:
         yield session
 
-# ✅ Pydantic models
+# ✅ Models for Feature Flag
 class RuleIn(BaseModel):
     field: str
     op: str
@@ -47,7 +51,7 @@ class FlagResponse(BaseModel):
     user_id: str
     enabled: bool
 
-# ✅ Create a new flag
+# ✅ Create flag
 @app.post("/flags")
 async def create_flag(flag: FeatureFlagIn, db: AsyncSession = Depends(get_db)):
     existing = await crud.get_flag_by_name(db, flag.name)
@@ -58,12 +62,12 @@ async def create_flag(flag: FeatureFlagIn, db: AsyncSession = Depends(get_db)):
     await crud.create_flag(db, flag)
     return {"message": f"Flag '{flag.name}' created successfully"}
 
-# ✅ List all flags
+# ✅ List flags
 @app.get("/flags")
 async def list_flags(db: AsyncSession = Depends(get_db)):
     return await crud.get_all_flags(db)
 
-# ✅ Evaluate flag for user
+# ✅ Evaluate flag logic
 def evaluate_rules(rules: List[Dict[str, Any]], user_attrs: Dict[str, Any]) -> bool:
     for rule in rules:
         field_val = user_attrs.get(rule["field"])
@@ -79,6 +83,7 @@ def evaluate_rules(rules: List[Dict[str, Any]], user_attrs: Dict[str, Any]) -> b
             return True
     return False
 
+# ✅ Test if flag is enabled
 @app.get("/flags/{flag_name}", response_model=FlagResponse)
 async def evaluate_flag(flag_name: str, user_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     flag = await crud.get_flag_by_name(db, flag_name)
@@ -96,7 +101,7 @@ async def evaluate_flag(flag_name: str, user_id: str, request: Request, db: Asyn
     if evaluate_rules(rules, user_attrs):
         return FlagResponse(flag=flag_name, user_id=user_id, enabled=True)
 
-    # fallback to rollout percentage
+    # Fallback: rollout-based assignment
     hash_val = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
     normalized = (hash_val % 10000) / 10000.0
     enabled = normalized < flag.rollout
