@@ -3,41 +3,6 @@
 
 OptiFork is a lightweight platform for managing **feature flags**, **targeting gates**, and **A/B experiments** with variant assignments and exposure logging.
 
----
-
-## ⚙️ Tech Stack
-
-- **Backend:** FastAPI, SQLAlchemy (async), SQLite
-- **Frontend:** React + Vite
-- **ORM:** SQLAlchemy
-- **DB:** SQLite (dev), easily swappable to PostgreSQL
-
----
-
-## 🚀 Getting Started
-
-### 📁 Project Structure
-
-```
-
-optifork/
-├── backend/
-│   ├── db/                     # DB setup & session
-│   ├── experiments/            # Experiment logic (CRUD, models, schemas)
-│   ├── routers/                # API routers (e.g., experiment\_router.py)
-│   ├── main.py                 # FastAPI entrypoint
-│   └── requirements.txt
-├── frontend/                   # React app
-│   ├── components/             # UI components like CreateExperiment.tsx
-│   ├── App.tsx
-│   └── ...
-└── README.md
-
-````
-
----
-
-## 🔧 Backend Setup
 
 1. **Navigate to backend**
    ```bash
