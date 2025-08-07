@@ -1,10 +1,13 @@
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from experiments.models import Experiment, Variant, UserAssignment, ExposureLog
-from experiments.schemas import ExperimentCreate
+from backend.experiments.models import Experiment, Variant, UserAssignment, ExposureLog
+from backend.experiments.schemas import ExperimentCreate
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func
+from backend.models import FeatureFlag as Flag
+from backend.models import FeatureFlag 
 import random
+import json
 
 
 async def create_experiment(db: AsyncSession, experiment_data: ExperimentCreate):
@@ -42,17 +45,44 @@ async def list_experiments(db: AsyncSession):
     return result.scalars().all()
 
 
-async def assign_user_to_variant(db: AsyncSession, experiment_id: int, user_id: str):
-    # Check if already assigned
-    result = await db.execute(
-        select(UserAssignment).where(
-            UserAssignment.experiment_id == experiment_id,
-            UserAssignment.user_id == user_id
+async def assign_user_to_variant(
+    db: AsyncSession,
+    experiment_id: int,
+    user_id: str,
+    user_attributes: dict = {}  # ✅ Accept user context
+):
+    # Get experiment (with flag_id)
+    exp_result = await db.execute(select(Experiment).where(Experiment.id == experiment_id))
+    experiment = exp_result.scalars().first()
+    
+
+    # Check if user is eligible based on targeting flag
+    if experiment.flag_id:
+        flag_result = await db.execute(
+            select(FeatureFlag)
+            .options(selectinload(FeatureFlag.rules))  # ✅ eager load to avoid greenlet error
+            .where(FeatureFlag.id == experiment.flag_id)
         )
-    )
-    assignment = result.scalars().first()
-    if assignment:
-        return assignment.variant
+        print('flag_result')
+        flag = flag_result.scalars().first()
+        print(flag)
+        if flag and not evaluate_flag_rules(flag.rules, user_attributes):
+            return None  # ❌ Not eligible
+
+
+    # Already assigned?
+        result = await db.execute(
+            select(UserAssignment)
+            .options(selectinload(UserAssignment.variant))  # <- eager load the variant
+            .where(
+                UserAssignment.experiment_id == experiment_id,
+                UserAssignment.user_id == user_id
+            )
+        )
+        assignment = result.scalars().first()
+        if assignment:
+            return assignment.variant
+
 
     # Fetch variants
     result = await db.execute(
@@ -62,7 +92,7 @@ async def assign_user_to_variant(db: AsyncSession, experiment_id: int, user_id: 
     if not variants:
         return None
 
-    # Assign using traffic split logic
+    # Assign using traffic split
     rnd = random.random()
     acc = 0.0
     for variant in variants:
@@ -92,7 +122,6 @@ async def log_exposure(db: AsyncSession, experiment_id: int, variant_id: int, us
     db.add(log)
     await db.commit()
     return log
-
 
 
 async def get_experiment_results(db: AsyncSession):
@@ -128,3 +157,47 @@ async def get_experiment_results(db: AsyncSession):
         results.append(exp_result)
 
     return results
+
+
+# def evaluate_flag_rules(rules_json: str, user_attributes: dict) -> bool:
+#     try:
+#         rules = json.loads(rules_json)
+#     except Exception:
+#         print('i am here in exception')
+#         return False
+
+#     for rule in rules:
+#         attr = rule.get("attribute")
+#         op = rule.get("operator")
+#         val = rule.get("value")
+#         print('i am here........')
+#         print(attr)
+#         print(op)
+#         print(val)
+#         user_val = user_attributes.get(attr)
+
+#         if op == "equals" and user_val != val:
+#             return False
+#         elif op == "not_equals" and user_val == val:
+#             return False
+#         # Add more ops as needed...
+
+#     return True
+
+
+def evaluate_flag_rules(rules: list, user_attributes: dict) -> bool:
+    for rule in rules:
+        attr = getattr(rule, "field", None) or getattr(rule, "attribute", None)
+        op = getattr(rule, "op", None) or getattr(rule, "operator", None)
+        val = getattr(rule, "value", None)
+
+        print(f"Evaluating Rule → field: {attr}, op: {op}, value: {val}")
+        user_val = user_attributes.get(attr)
+
+        if op == "equals" and user_val != val:
+            return False
+        elif op == "not_equals" and user_val == val:
+            return False
+        # Add more ops as needed...
+
+    return True

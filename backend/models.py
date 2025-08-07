@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from db import Base
+from backend.db import Base
 
 class FeatureFlag(Base):
     __tablename__ = "feature_flags"

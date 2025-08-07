@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from db import get_db
-from experiments import crud
-from experiments.models import Experiment
-from experiments.schemas import (
+from typing import List, Optional
+from backend.db import get_db
+from backend.experiments import crud
+from backend.experiments.models import Experiment
+from backend.experiments.schemas import (
     ExperimentCreate, ExperimentOut,
     VariantOut, AssignmentResponse
 )
@@ -33,18 +34,38 @@ async def list_experiments(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{experiment_name}/assign", response_model=AssignmentResponse)
-async def assign_user(experiment_name: str, user_id: str, db: AsyncSession = Depends(get_db)):
+async def assign_user(
+    experiment_name: str,
+    user_id: str,
+    country: Optional[str] = None,  # 👈 Add more attributes as needed
+    db: AsyncSession = Depends(get_db)
+):
     experiment = await crud.get_experiment_by_name(db, experiment_name)
     if not experiment:
         raise HTTPException(status_code=404, detail="Experiment not found.")
-    variant = await crud.assign_user_to_variant(db, experiment.id, user_id)
+
+    # 👇 Construct user attributes dict
+    user_attributes = {}
+    if country:
+        user_attributes["country"] = country
+
+    # 👇 Pass user attributes to the assignment logic
+    print('user_attributes')
+    print(user_attributes)
+    variant = await crud.assign_user_to_variant(
+        db, experiment.id, user_id, user_attributes=user_attributes
+    )
+    print('variant')
+    print(variant)
     if not variant:
-        raise HTTPException(status_code=400, detail="No variants found for assignment.")
+        raise HTTPException(status_code=400, detail="User not eligible for any variant.")
+
     return AssignmentResponse(
         experiment=experiment.name,
         user_id=user_id,
         variant=variant.name
     )
+
 
 
 @router.post("/{experiment_name}/exposure")
