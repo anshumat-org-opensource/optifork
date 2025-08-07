@@ -3,12 +3,13 @@ import { useState } from "react";
 function AssignUserToVariant() {
   const [experimentName, setExperimentName] = useState("");
   const [userId, setUserId] = useState("");
+  const [country, setCountry] = useState("");  // new field
   const [assignment, setAssignment] = useState("");
   const [error, setError] = useState("");
 
   const handleAssign = async () => {
-    if (!experimentName || !userId) {
-      setError("Please fill in both fields.");
+    if (!experimentName || !userId || !country) {
+      setError("Please fill in all fields.");
       return;
     }
 
@@ -17,7 +18,7 @@ function AssignUserToVariant() {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/experiments/${experimentName}/assign?user_id=${userId}`
+        `http://localhost:8000/experiments/${experimentName}/assign?user_id=${userId}&country=${country}`
       );
       const data = await res.json();
 
@@ -48,6 +49,14 @@ function AssignUserToVariant() {
         placeholder="User ID"
         value={userId}
         onChange={(e) => setUserId(e.target.value)}
+        className="mb-3 w-full px-4 py-2 border rounded"
+      />
+
+      <input
+        type="text"
+        placeholder="Country (e.g., IN)"
+        value={country}
+        onChange={(e) => setCountry(e.target.value)}
         className="mb-4 w-full px-4 py-2 border rounded"
       />
 

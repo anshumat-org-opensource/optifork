@@ -4,10 +4,10 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import hashlib
 from sqlalchemy.ext.asyncio import AsyncSession
-from db import SessionLocal, engine
-from models import Base
-import crud
-from routers import experiment_router
+from backend.db import SessionLocal, engine
+from backend.models import Base
+import backend.crud as crud
+from backend.routers import experiment_router
 
 app = FastAPI()
 
