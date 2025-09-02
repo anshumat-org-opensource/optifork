@@ -16,7 +16,7 @@ const TestFlag = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/flags/${flagName}?${query.toString()}`);
+      const res = await fetch(`http://localhost:8001/flags/${flagName}?${query.toString()}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail);
       setResult(`Flag "${data.flag}" for user "${data.user_id}" is ${data.enabled ? "ENABLED ✅" : "DISABLED ❌"}`);

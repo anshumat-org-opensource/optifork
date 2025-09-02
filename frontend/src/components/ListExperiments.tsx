@@ -22,7 +22,7 @@ function ListExperiments() {
   useEffect(() => {
     const fetchExperiments = async () => {
       try {
-        const res = await fetch("http://localhost:8000/experiments");
+        const res = await fetch("http://localhost:8001/experiments");
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Failed to load experiments");
         setExperiments(data);
