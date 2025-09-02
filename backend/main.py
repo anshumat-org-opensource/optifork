@@ -67,6 +67,17 @@ async def create_flag(flag: FeatureFlagIn, db: AsyncSession = Depends(get_db)):
 async def list_flags(db: AsyncSession = Depends(get_db)):
     return await crud.get_all_flags(db)
 
+# ✅ Update flag
+@app.put("/flags/{flag_name}")
+async def update_flag(flag_name: str, flag: FeatureFlagIn, db: AsyncSession = Depends(get_db)):
+    existing = await crud.get_flag_by_name(db, flag_name)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Flag not found")
+    if not 0.0 <= flag.rollout <= 1.0:
+        raise HTTPException(status_code=400, detail="Rollout must be between 0 and 1")
+    await crud.update_flag(db, flag_name, flag)
+    return {"message": f"Flag '{flag_name}' updated successfully"}
+
 # ✅ Evaluate flag logic
 def evaluate_rules(rules: List[Dict[str, Any]], user_attrs: Dict[str, Any]) -> bool:
     for rule in rules:
@@ -98,10 +109,11 @@ async def evaluate_flag(flag_name: str, user_id: str, request: Request, db: Asyn
         for r in flag.rules
     ]
 
-    if evaluate_rules(rules, user_attrs):
-        return FlagResponse(flag=flag_name, user_id=user_id, enabled=True)
+    # If rules exist, they act as gates - user must match rules to be eligible for rollout
+    if rules and not evaluate_rules(rules, user_attrs):
+        return FlagResponse(flag=flag_name, user_id=user_id, enabled=False)
 
-    # Fallback: rollout-based assignment
+    # Apply rollout-based assignment (either no rules, or rules matched)
     hash_val = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
     normalized = (hash_val % 10000) / 10000.0
     enabled = normalized < flag.rollout

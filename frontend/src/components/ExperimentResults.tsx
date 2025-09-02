@@ -23,7 +23,7 @@ function ExperimentResults() {
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const res = await fetch("http://localhost:8000/experiments/results");
+        const res = await fetch("http://localhost:8001/experiments/results");
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Failed to fetch results");
         setResults(data);

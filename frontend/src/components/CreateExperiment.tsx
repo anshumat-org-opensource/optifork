@@ -37,7 +37,7 @@ function CreateExperiment() {
     };
 
     try {
-      const res = await fetch("http://localhost:8000/experiments", {
+      const res = await fetch("http://localhost:8001/experiments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
