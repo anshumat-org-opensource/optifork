@@ -57,15 +57,21 @@ function CreateFlag() {
   };
 
   return (
-    <div className="max-w-2xl p-6 bg-white shadow-lg rounded-lg">
-      <div className="flex items-center mb-6">
-        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-          <span className="text-blue-600 font-bold">🚩</span>
+    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-6">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-lg">🚩</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Create Feature Flag</h2>
+            <p className="text-blue-100 text-sm">Control feature rollouts with targeting rules</p>
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800">Create Feature Flag</h2>
       </div>
 
-      <div className="space-y-5">
+      <div className="p-8">
+        <div className="space-y-5">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Flag Name <span className="text-red-500">*</span>
@@ -238,6 +244,7 @@ function CreateFlag() {
           {message}
         </div>
       )}
+      </div>
     </div>
   );
 }

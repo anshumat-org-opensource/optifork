@@ -7,10 +7,19 @@ class VariantIn(BaseModel):
     traffic_split: float  # should be between 0 and 1
 
 
+class VariantOut(BaseModel):
+    id: int
+    name: str
+    traffic_split: float
+
+    class Config:
+        from_attributes = True
+
+
 class ExperimentCreate(BaseModel):
     name: str
     description: Optional[str] = None
-    flag_id: Optional[int]  # ✅ Add this line
+    flag_id: Optional[int]
     variants: List[VariantIn]
 
 
@@ -19,11 +28,11 @@ class ExperimentOut(BaseModel):
     name: str
     description: Optional[str]
     status: str
-    flag_id: Optional[int]  # ✅ Add this line
-    variants: List[VariantIn]
+    flag_id: Optional[int]
+    variants: List[VariantOut]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserAssignmentOut(BaseModel):
@@ -35,14 +44,6 @@ class ExposureLogIn(BaseModel):
     user_id: str
     experiment_id: int
     variant_id: int
-
-class VariantOut(BaseModel):
-    id: int
-    name: str
-    traffic_split: float
-
-    class Config:
-        from_attributes = True  # Update this for Pydantic v2
 
 
 class AssignmentResponse(BaseModel):

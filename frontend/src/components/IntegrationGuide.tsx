@@ -51,6 +51,67 @@ if (isNewCheckoutEnabled) {
 }`
       },
       {
+        title: "Experiment Assignment", 
+        description: "Get user variant assignment for A/B testing",
+        code: `// Get experiment assignment
+async function getExperimentVariant(experimentName, userId, userAttributes = {}) {
+  const params = new URLSearchParams({
+    user_id: userId,
+    ...userAttributes
+  });
+  
+  try {
+    const response = await fetch(\`\${API_BASE_URL}/experiments/\${experimentName}/assign?\${params}\`);
+    const result = await response.json();
+    return result.variant;
+  } catch (error) {
+    console.error('Experiment assignment failed:', error);
+    return 'control'; // Default to control variant
+  }
+}
+
+// Usage with feature flags
+async function getFeatureExperience(userId, userAttributes) {
+  // Check if experiment is enabled via feature flag
+  const experimentEnabled = await checkFeatureFlag(
+    'homepage_experiment_enabled', 
+    userId, 
+    userAttributes
+  );
+  
+  if (experimentEnabled) {
+    // Get experiment variant
+    const variant = await getExperimentVariant(
+      'homepage_redesign',
+      userId,
+      userAttributes
+    );
+    
+    return variant; // 'control', 'variant_a', 'variant_b'
+  }
+  
+  return 'control'; // No experiment, use control
+}
+
+// Usage
+const variant = await getFeatureExperience('user123', { 
+  country: 'US', 
+  plan: 'premium' 
+});
+
+// Render different UI based on variant
+switch (variant) {
+  case 'variant_a':
+    renderNewHomepage();
+    break;
+  case 'variant_b': 
+    renderAlternativeHomepage();
+    break;
+  default:
+    renderOriginalHomepage();
+}`
+      },
+      {
         title: "React Hook",
         description: "Custom hook for feature flags in React applications",
         code: `import { useState, useEffect } from 'react';
@@ -158,6 +219,67 @@ if is_enabled:
 else:
     # Use old algorithm
     result = legacy_recommendation_algorithm(user_data)`
+      },
+      {
+        title: "Experiment Assignment",
+        description: "A/B testing with experiments in Python",
+        code: `import requests
+from typing import Dict, Optional
+
+class OptiForkClient:
+    def __init__(self, api_base_url: str):
+        self.api_base_url = api_base_url.rstrip('/')
+    
+    def get_experiment_variant(self, experiment_name: str, user_id: str,
+                              user_attributes: Optional[Dict] = None) -> str:
+        """Get user's variant assignment for an experiment."""
+        try:
+            params = {'user_id': user_id}
+            if user_attributes:
+                params.update(user_attributes)
+            
+            response = requests.get(
+                f"{self.api_base_url}/experiments/{experiment_name}/assign",
+                params=params,
+                timeout=5
+            )
+            response.raise_for_status()
+            
+            return response.json().get('variant', 'control')
+        except Exception as e:
+            print(f"Experiment assignment failed: {e}")
+            return 'control'  # Default to control
+
+    def get_feature_experience(self, user_id: str, experiment_name: str, 
+                              flag_name: str, user_attributes: Optional[Dict] = None) -> str:
+        """Get feature experience combining flags and experiments."""
+        # First check if experiment is enabled via feature flag
+        experiment_enabled = self.check_flag(flag_name, user_id, user_attributes)
+        
+        if experiment_enabled:
+            # Get experiment variant
+            return self.get_experiment_variant(experiment_name, user_id, user_attributes)
+        
+        return 'control'  # No experiment, use control
+
+# Usage example
+client = OptiForkClient('http://localhost:8000')
+
+# Get experiment variant
+variant = client.get_feature_experience(
+    user_id='user123',
+    experiment_name='checkout_optimization', 
+    flag_name='checkout_experiment_enabled',
+    user_attributes={'country': 'US', 'plan': 'premium'}
+)
+
+# Use variant to determine behavior
+if variant == 'one_page_checkout':
+    checkout_page = render_one_page_checkout(user_data)
+elif variant == 'simplified_checkout':
+    checkout_page = render_simplified_checkout(user_data) 
+else:  # control
+    checkout_page = render_original_checkout(user_data)`
       },
       {
         title: "Django Decorator",
@@ -428,7 +550,46 @@ curl -X PUT "http://localhost:8000/flags/dark_mode" \\
 curl "http://localhost:8000/flags/dark_mode/exposures?limit=50"
 
 # Get all exposures  
-curl "http://localhost:8000/exposures?limit=100"`
+curl "http://localhost:8000/exposures?limit=100"
+
+# === EXPERIMENT APIs ===
+
+# Assign user to experiment variant
+curl "http://localhost:8000/experiments/homepage_redesign/assign?user_id=user123&country=US&plan=premium"
+
+# Response:
+# {
+#   "experiment": "homepage_redesign",
+#   "user_id": "user123",
+#   "variant": "variant_a"
+# }
+
+# Create an experiment
+curl -X POST "http://localhost:8000/experiments" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "button_color_test",
+    "description": "Test different button colors",
+    "flag_id": 1,
+    "variants": [
+      {"name": "control", "traffic_split": 0.5},
+      {"name": "red_button", "traffic_split": 0.3},
+      {"name": "green_button", "traffic_split": 0.2}
+    ]
+  }'
+
+# Get all experiments
+curl "http://localhost:8000/experiments"
+
+# JSON Attributes Example
+curl "http://localhost:8000/experiments/checkout_test/assign" \\
+  -G \\
+  -d user_id=user456 \\
+  -d country=CA \\
+  -d age=28 \\
+  -d plan=premium \\
+  -d device=mobile \\
+  -d returning_user=true`
       }
     ]
   }
@@ -481,14 +642,40 @@ function IntegrationGuide() {
 
         {/* API Endpoint Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-blue-800 mb-2">🔗 API Endpoint</h3>
-          <div className="space-y-2 text-sm">
-            <div className="font-mono bg-blue-100 px-3 py-2 rounded">
-              <strong>Base URL:</strong> http://localhost:8000
+          <h3 className="font-semibold text-blue-800 mb-3">🔗 API Endpoints</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <h4 className="font-medium text-blue-700 mb-2">📍 Feature Flags</h4>
+              <div className="font-mono bg-blue-100 px-3 py-2 rounded">
+                <strong>Base URL:</strong> http://localhost:8000
+              </div>
+              <div className="font-mono bg-blue-100 px-3 py-2 rounded">
+                <strong>Check Flag:</strong><br/>
+                GET /flags/{"{flag_name}"}?user_id={"{user_id}"}&{"{...attributes}"}
+              </div>
+              <div className="font-mono bg-blue-100 px-3 py-2 rounded text-xs">
+                <strong>Response:</strong><br/>
+                {`{ "flag": "...", "user_id": "...", "enabled": true }`}
+              </div>
             </div>
-            <div className="font-mono bg-blue-100 px-3 py-2 rounded">
-              <strong>Flag Check:</strong> GET /flags/{"{flag_name}"}?user_id={"{user_id}"}&{"{attributes}"}
+            <div className="space-y-2">
+              <h4 className="font-medium text-green-700 mb-2">🧪 Experiments</h4>
+              <div className="font-mono bg-green-100 px-3 py-2 rounded">
+                <strong>Assign User:</strong><br/>
+                GET /experiments/{"{experiment_name}"}/assign?user_id={"{user_id}"}&{"{...attributes}"}
+              </div>
+              <div className="font-mono bg-green-100 px-3 py-2 rounded text-xs">
+                <strong>Response:</strong><br/>
+                {`{ "experiment": "...", "user_id": "...", "variant": "control" }`}
+              </div>
             </div>
+          </div>
+          
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-yellow-800 text-sm">
+              <strong>💡 Tip:</strong> Pass user attributes as JSON in your application, then convert to URL parameters for API calls. 
+              Both feature flags and experiments support the same attribute format.
+            </p>
           </div>
         </div>
       </div>

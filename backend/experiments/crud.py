@@ -33,7 +33,15 @@ async def create_experiment(db: AsyncSession, experiment_data: ExperimentCreate)
     ]
     db.add_all(variants)
     await db.commit()
-    return experiment
+    
+    # Refresh and load variants
+    await db.refresh(experiment)
+    result = await db.execute(
+        select(Experiment)
+        .where(Experiment.id == experiment.id)
+        .options(selectinload(Experiment.variants))
+    )
+    return result.scalars().first()
 
 
 async def get_experiment_by_name(db: AsyncSession, name: str):
