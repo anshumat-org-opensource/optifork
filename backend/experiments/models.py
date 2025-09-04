@@ -2,7 +2,10 @@
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, func
 from sqlalchemy.orm import relationship
-from backend.db import Base
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from db import Base
 
 class Experiment(Base):
     __tablename__ = "experiments"

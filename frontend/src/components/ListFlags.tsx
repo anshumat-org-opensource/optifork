@@ -21,7 +21,7 @@ function ListFlags() {
 
   const fetchFlags = async () => {
     try {
-      const res = await fetch("http://localhost:8001/flags");
+      const res = await fetch("http://localhost:8000/flags");
       const data = await res.json();
       setFlags(data);
     } catch (err) {
@@ -41,7 +41,7 @@ function ListFlags() {
     if (!editingFlag) return;
     
     try {
-      const response = await fetch(`http://localhost:8001/flags/${editingFlag.name}`, {
+      const response = await fetch(`http://localhost:8000/flags/${editingFlag.name}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

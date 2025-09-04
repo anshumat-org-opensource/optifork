@@ -1,11 +1,14 @@
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.experiments.models import Experiment, Variant, UserAssignment, ExposureLog
-from backend.experiments.schemas import ExperimentCreate
+from experiments.models import Experiment, Variant, UserAssignment, ExposureLog
+from experiments.schemas import ExperimentCreate
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func
-from backend.models import FeatureFlag as Flag
-from backend.models import FeatureFlag 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from models import FeatureFlag as Flag
+from models import FeatureFlag 
 import random
 import json
 

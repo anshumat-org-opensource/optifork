@@ -2,8 +2,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from backend.models import FeatureFlag, Rule
-from backend.schemas import FeatureFlagIn
+from models import FeatureFlag, Rule, FlagExposure
+from schemas import FeatureFlagIn
 
 
 async def get_flag_by_name(db: AsyncSession, name: str):
@@ -69,3 +69,28 @@ async def update_flag(db: AsyncSession, flag_name: str, flag_in: FeatureFlagIn):
     await db.commit()
     await db.refresh(existing_flag)
     return existing_flag
+
+async def log_flag_exposure(db: AsyncSession, flag_id: int, flag_name: str, user_id: str, enabled: bool):
+    """Log when a user is exposed to a feature flag"""
+    exposure = FlagExposure(
+        flag_id=flag_id,
+        flag_name=flag_name,
+        user_id=user_id,
+        enabled="true" if enabled else "false"
+    )
+    db.add(exposure)
+    await db.commit()
+    return exposure
+
+async def get_flag_exposures(db: AsyncSession, flag_name: str = None, limit: int = 100):
+    """Get flag exposure logs"""
+    query = select(FlagExposure).order_by(FlagExposure.timestamp.desc())
+    
+    if flag_name:
+        query = query.where(FlagExposure.flag_name == flag_name)
+    
+    if limit:
+        query = query.limit(limit)
+    
+    result = await db.execute(query)
+    return result.scalars().all()

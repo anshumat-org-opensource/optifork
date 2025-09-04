@@ -4,10 +4,10 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import hashlib
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.db import SessionLocal, engine
-from backend.models import Base
-import backend.crud as crud
-from backend.routers import experiment_router
+from db import SessionLocal, engine
+from models import Base
+import crud as crud
+from routers import experiment_router
 
 app = FastAPI()
 
@@ -78,6 +78,36 @@ async def update_flag(flag_name: str, flag: FeatureFlagIn, db: AsyncSession = De
     await crud.update_flag(db, flag_name, flag)
     return {"message": f"Flag '{flag_name}' updated successfully"}
 
+# ✅ Get flag exposures
+@app.get("/flags/{flag_name}/exposures")
+async def get_flag_exposures(flag_name: str, limit: int = 100, db: AsyncSession = Depends(get_db)):
+    exposures = await crud.get_flag_exposures(db, flag_name, limit)
+    return [
+        {
+            "id": exp.id,
+            "flag_name": exp.flag_name,
+            "user_id": exp.user_id,
+            "enabled": exp.enabled == "true",
+            "timestamp": exp.timestamp
+        }
+        for exp in exposures
+    ]
+
+# ✅ Get all flag exposures
+@app.get("/exposures")
+async def get_all_exposures(limit: int = 100, db: AsyncSession = Depends(get_db)):
+    exposures = await crud.get_flag_exposures(db, None, limit)
+    return [
+        {
+            "id": exp.id,
+            "flag_name": exp.flag_name,
+            "user_id": exp.user_id,
+            "enabled": exp.enabled == "true",
+            "timestamp": exp.timestamp
+        }
+        for exp in exposures
+    ]
+
 # ✅ Evaluate flag logic
 def evaluate_rules(rules: List[Dict[str, Any]], user_attrs: Dict[str, Any]) -> bool:
     for rule in rules:
@@ -111,10 +141,16 @@ async def evaluate_flag(flag_name: str, user_id: str, request: Request, db: Asyn
 
     # If rules exist, they act as gates - user must match rules to be eligible for rollout
     if rules and not evaluate_rules(rules, user_attrs):
+        # Log the exposure (disabled due to rules)
+        await crud.log_flag_exposure(db, flag.id, flag.name, user_id, False)
         return FlagResponse(flag=flag_name, user_id=user_id, enabled=False)
 
     # Apply rollout-based assignment (either no rules, or rules matched)
     hash_val = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
     normalized = (hash_val % 10000) / 10000.0
     enabled = normalized < flag.rollout
+    
+    # Log the exposure
+    await crud.log_flag_exposure(db, flag.id, flag.name, user_id, enabled)
+    
     return FlagResponse(flag=flag_name, user_id=user_id, enabled=enabled)

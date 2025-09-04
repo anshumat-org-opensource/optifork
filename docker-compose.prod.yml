@@ -1,0 +1,123 @@
+# Production overrides for Docker Compose
+version: '3.8'
+
+services:
+  # Production PostgreSQL with optimizations
+  postgres:
+    environment:
+      POSTGRES_DB: optifork
+      POSTGRES_USER: optifork
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c max_connections=200
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # Production Backend with optimizations
+  backend:
+    environment:
+      DATABASE_URL: postgresql://optifork:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/optifork
+      DEBUG: "false"
+      LOG_LEVEL: info
+      WORKERS: 4
+    depends_on:
+      - postgres
+      - redis
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Production Frontend with caching
+  frontend:
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # Production Redis with persistence
+  redis:
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    restart: always
+
+  # Load balancer (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: optifork-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - optifork-network
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Production network with custom subnet
+networks:
+  optifork-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
