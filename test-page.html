@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiFork Test Page - Feature Flags & Experiments</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .code-block {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <div class="gradient-bg text-white py-8">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <span class="text-2xl">🧪</span>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold">OptiFork Test Page</h1>
+                    <p class="text-white opacity-90">Live testing of feature flags and experiments</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- User Settings -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <span class="mr-2">👤</span>
+                User Configuration
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">User ID</label>
+                    <input type="text" id="userId" value="test_user_123" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">User Attributes (JSON)</label>
+                    <textarea id="userAttributes" rows="4" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-mono text-sm">{
+  "country": "US",
+  "age": 28,
+  "plan": "premium",
+  "device": "mobile",
+  "returning_user": true
+}</textarea>
+                </div>
+            </div>
+            
+            <button onclick="updateUserSettings()" 
+                    class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Update User Settings
+            </button>
+        </div>
+
+        <!-- Feature Flag Testing -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <span class="mr-2">🚩</span>
+                Feature Flag Testing
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Flag Name</label>
+                    <input type="text" id="flagName" value="test_flag" placeholder="Enter flag name"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    
+                    <button onclick="checkFeatureFlag()" 
+                            class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Check Flag
+                    </button>
+                </div>
+                
+                <div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium text-gray-800 mb-2">Flag Result</h3>
+                        <div id="flagResult" class="text-gray-600 font-mono text-sm">
+                            Click "Check Flag" to test
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Experiment Testing -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <span class="mr-2">🧪</span>
+                Experiment Testing
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Experiment Name</label>
+                    <input type="text" id="experimentName" value="homepage_test" placeholder="Enter experiment name"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500">
+                    
+                    <button onclick="getExperimentVariant()" 
+                            class="mt-3 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        Get Variant
+                    </button>
+                </div>
+                
+                <div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium text-gray-800 mb-2">Experiment Result</h3>
+                        <div id="experimentResult" class="text-gray-600 font-mono text-sm">
+                            Click "Get Variant" to test
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Demo Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <span class="mr-2">🎭</span>
+                Live Demo - Homepage Variations
+            </h2>
+            
+            <div class="mb-4">
+                <button onclick="runHomepageDemo()" 
+                        class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">
+                    Run Homepage A/B Test Demo
+                </button>
+            </div>
+            
+            <div id="homepageDemo" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+                Click "Run Homepage A/B Test Demo" to see different variants
+            </div>
+        </div>
+
+        <!-- API Logs -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <span class="mr-2">📋</span>
+                API Call Logs
+            </h2>
+            
+            <div class="mb-4">
+                <button onclick="clearLogs()" 
+                        class="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600">
+                    Clear Logs
+                </button>
+            </div>
+            
+            <div id="apiLogs" class="code-block rounded-lg p-4 text-sm font-mono max-h-96 overflow-y-auto">
+                <div class="text-green-400"># API calls will appear here...</div>
+            </div>
+        </div>
+
+        <!-- Usage Examples -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <span class="mr-2">💡</span>
+                Usage Examples
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-medium text-gray-800 mb-2">Feature Flag Check</h3>
+                    <div class="code-block rounded p-3 text-xs">
+<pre>GET /flags/test_flag?user_id=test_user_123&country=US&plan=premium
+
+Response:
+{
+  "flag": "test_flag",
+  "user_id": "test_user_123", 
+  "enabled": true
+}</pre>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-medium text-gray-800 mb-2">Experiment Assignment</h3>
+                    <div class="code-block rounded p-3 text-xs">
+<pre>GET /experiments/homepage_test/assign?user_id=test_user_123&country=US&plan=premium
+
+Response:
+{
+  "experiment": "homepage_test",
+  "user_id": "test_user_123",
+  "variant": "variant_a"
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+        let currentUser = {
+            id: 'test_user_123',
+            attributes: {
+                country: 'US',
+                age: 28,
+                plan: 'premium',
+                device: 'mobile',
+                returning_user: true
+            }
+        };
+
+        // Utility Functions
+        function logAPI(method, url, response, error = null) {
+            const logsDiv = document.getElementById('apiLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            let logEntry = `<div class="mb-2">`;
+            logEntry += `<span class="text-yellow-400">[${timestamp}]</span> `;
+            logEntry += `<span class="text-blue-400">${method}</span> `;
+            logEntry += `<span class="text-white">${url}</span><br>`;
+            
+            if (error) {
+                logEntry += `<span class="text-red-400">❌ Error: ${error}</span>`;
+            } else {
+                logEntry += `<span class="text-green-400">✅ Response: ${JSON.stringify(response, null, 2)}</span>`;
+            }
+            logEntry += `</div>`;
+            
+            logsDiv.innerHTML += logEntry;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function buildQueryParams(userId, attributes) {
+            const params = new URLSearchParams();
+            params.append('user_id', userId);
+            
+            Object.entries(attributes).forEach(([key, value]) => {
+                params.append(key, String(value));
+            });
+            
+            return params.toString();
+        }
+
+        // Feature Flag Functions
+        async function checkFeatureFlag() {
+            const flagName = document.getElementById('flagName').value;
+            if (!flagName) {
+                alert('Please enter a flag name');
+                return;
+            }
+
+            const queryParams = buildQueryParams(currentUser.id, currentUser.attributes);
+            const url = `${API_BASE_URL}/flags/${flagName}?${queryParams}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'API Error');
+                }
+
+                logAPI('GET', url, data);
+                
+                const resultDiv = document.getElementById('flagResult');
+                const isEnabled = data.enabled;
+                resultDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl">${isEnabled ? '✅' : '❌'}</span>
+                        <div>
+                            <div class="font-bold ${isEnabled ? 'text-green-600' : 'text-red-600'}">
+                                ${isEnabled ? 'ENABLED' : 'DISABLED'}
+                            </div>
+                            <div class="text-xs text-gray-500">Flag: ${data.flag} | User: ${data.user_id}</div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                logAPI('GET', url, null, error.message);
+                document.getElementById('flagResult').innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
+            }
+        }
+
+        // Experiment Functions
+        async function getExperimentVariant() {
+            const experimentName = document.getElementById('experimentName').value;
+            if (!experimentName) {
+                alert('Please enter an experiment name');
+                return;
+            }
+
+            const queryParams = buildQueryParams(currentUser.id, currentUser.attributes);
+            const url = `${API_BASE_URL}/experiments/${experimentName}/assign?${queryParams}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'API Error');
+                }
+
+                logAPI('GET', url, data);
+                
+                const resultDiv = document.getElementById('experimentResult');
+                resultDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl">🧪</span>
+                        <div>
+                            <div class="font-bold text-purple-600">${data.variant.toUpperCase()}</div>
+                            <div class="text-xs text-gray-500">Experiment: ${data.experiment} | User: ${data.user_id}</div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                logAPI('GET', url, null, error.message);
+                document.getElementById('experimentResult').innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
+            }
+        }
+
+        // Demo Functions
+        async function runHomepageDemo() {
+            const demoDiv = document.getElementById('homepageDemo');
+            demoDiv.innerHTML = '<div class="text-blue-600">🔄 Loading...</div>';
+
+            // First check if experiment is enabled
+            try {
+                const flagCheck = await checkFlag('homepage_experiment_enabled');
+                
+                if (!flagCheck) {
+                    demoDiv.innerHTML = `
+                        <div class="bg-gray-100 p-6 rounded">
+                            <h3 class="text-xl font-bold text-gray-800">Original Homepage</h3>
+                            <p class="text-gray-600">Experiment is not enabled - showing control experience</p>
+                            <div class="mt-4 bg-blue-500 text-white px-4 py-2 rounded inline-block">
+                                Sign Up - Classic Button
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Get experiment variant
+                const variant = await getVariant('homepage_test');
+                
+                // Render different homepage based on variant
+                switch(variant) {
+                    case 'variant_a':
+                        demoDiv.innerHTML = `
+                            <div class="bg-gradient-to-r from-green-400 to-blue-500 text-white p-6 rounded">
+                                <h3 class="text-2xl font-bold">🚀 New Homepage - Variant A</h3>
+                                <p class="mb-4">Modern design with gradient background</p>
+                                <button class="bg-white text-green-600 px-6 py-3 rounded-full font-bold shadow-lg">
+                                    Get Started Now! 🎉
+                                </button>
+                            </div>
+                        `;
+                        break;
+                    case 'variant_b':
+                        demoDiv.innerHTML = `
+                            <div class="bg-purple-600 text-white p-6 rounded">
+                                <h3 class="text-2xl font-bold">✨ Premium Homepage - Variant B</h3>
+                                <p class="mb-4">Elegant purple theme for premium users</p>
+                                <button class="bg-yellow-400 text-purple-900 px-6 py-3 rounded font-bold">
+                                    Start Premium Trial ⭐
+                                </button>
+                            </div>
+                        `;
+                        break;
+                    default:
+                        demoDiv.innerHTML = `
+                            <div class="bg-gray-100 p-6 rounded">
+                                <h3 class="text-xl font-bold text-gray-800">Original Homepage - Control</h3>
+                                <p class="text-gray-600 mb-4">Standard homepage experience</p>
+                                <button class="bg-blue-600 text-white px-6 py-3 rounded">
+                                    Sign Up
+                                </button>
+                            </div>
+                        `;
+                }
+                
+            } catch (error) {
+                demoDiv.innerHTML = `<div class="text-red-600">❌ Demo failed: ${error.message}</div>`;
+            }
+        }
+
+        // Helper functions for demo
+        async function checkFlag(flagName) {
+            const queryParams = buildQueryParams(currentUser.id, currentUser.attributes);
+            const url = `${API_BASE_URL}/flags/${flagName}?${queryParams}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return response.ok ? data.enabled : false;
+            } catch {
+                return false;
+            }
+        }
+
+        async function getVariant(experimentName) {
+            const queryParams = buildQueryParams(currentUser.id, currentUser.attributes);
+            const url = `${API_BASE_URL}/experiments/${experimentName}/assign?${queryParams}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return response.ok ? data.variant : 'control';
+            } catch {
+                return 'control';
+            }
+        }
+
+        // User Settings Functions
+        function updateUserSettings() {
+            try {
+                currentUser.id = document.getElementById('userId').value;
+                const attributesText = document.getElementById('userAttributes').value;
+                currentUser.attributes = JSON.parse(attributesText);
+                
+                alert('✅ User settings updated successfully!');
+                
+                // Log the update
+                logAPI('UPDATE', 'User Settings', {
+                    user_id: currentUser.id,
+                    attributes: currentUser.attributes
+                });
+                
+            } catch (error) {
+                alert('❌ Invalid JSON in user attributes: ' + error.message);
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('apiLogs').innerHTML = '<div class="text-green-400"># API calls will appear here...</div>';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            logAPI('INFO', 'Page Loaded', {
+                message: 'OptiFork test page initialized',
+                api_base_url: API_BASE_URL,
+                user: currentUser
+            });
+        });
+    </script>
+</body>
+</html>
