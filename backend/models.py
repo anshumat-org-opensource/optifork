@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
-from backend.db import Base
+from db import Base
 
 class FeatureFlag(Base):
     __tablename__ = "feature_flags"
@@ -21,3 +21,15 @@ class Rule(Base):
 
     flag_id = Column(Integer, ForeignKey("feature_flags.id"))
     flag = relationship("FeatureFlag", back_populates="rules")
+
+class FlagExposure(Base):
+    __tablename__ = "flag_exposures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    flag_id = Column(Integer, ForeignKey("feature_flags.id"))
+    flag_name = Column(String, index=True)
+    user_id = Column(String, index=True)
+    enabled = Column(String)  # "true" or "false"
+    timestamp = Column(DateTime, server_default=func.now())
+    
+    flag = relationship("FeatureFlag")

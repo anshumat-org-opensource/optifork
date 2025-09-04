@@ -23,7 +23,7 @@ function CreateFlag() {
         rules: rules,
       };
 
-      const res = await fetch("http://localhost:8001/flags", {
+      const res = await fetch("http://localhost:8000/flags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

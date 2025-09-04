@@ -18,7 +18,7 @@ function AssignUserToVariant() {
 
     try {
       const res = await fetch(
-        `http://localhost:8001/experiments/${experimentName}/assign?user_id=${userId}&country=${country}`
+        `http://localhost:8000/experiments/${experimentName}/assign?user_id=${userId}&country=${country}`
       );
       const data = await res.json();
 

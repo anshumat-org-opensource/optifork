@@ -4,10 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
-from backend.db import get_db
-from backend.experiments import crud
-from backend.experiments.models import Experiment
-from backend.experiments.schemas import (
+from db import get_db
+from experiments import crud
+from experiments.models import Experiment
+from experiments.schemas import (
     ExperimentCreate, ExperimentOut,
     VariantOut, AssignmentResponse
 )
