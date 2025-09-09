@@ -5,9 +5,11 @@ from typing import Optional, Dict, List, Any
 import hashlib
 from sqlalchemy.ext.asyncio import AsyncSession
 from db import SessionLocal, engine
-from models import Base
+from models import Base, SnowflakeConfig
 import crud as crud
 from routers import experiment_router
+from routers import integrations
+from scheduler import start_background_scheduler
 
 app = FastAPI()
 
@@ -20,14 +22,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Register experiment routes
+# ✅ Register routes
 app.include_router(experiment_router.router)
+app.include_router(integrations.router)
 
 # ✅ Create DB tables on startup
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Start background export scheduler
+    start_background_scheduler()
 
 # ✅ Dependency to get DB session
 async def get_db():

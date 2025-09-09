@@ -33,3 +33,17 @@ class FlagExposure(Base):
     timestamp = Column(DateTime, server_default=func.now())
     
     flag = relationship("FeatureFlag")
+
+class SnowflakeConfig(Base):
+    __tablename__ = "snowflake_configs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    account = Column(String, nullable=False)
+    user = Column(String, nullable=False)
+    password = Column(String, nullable=False)  # Should be encrypted in production
+    warehouse = Column(String, nullable=False)
+    database = Column(String, nullable=False)
+    schema = Column(String, nullable=False)
+    is_active = Column(String, default="true")  # Only one active config
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

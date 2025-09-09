@@ -8,6 +8,7 @@ import AssignUserToVariant from "./components/AssignUserToVariant";
 import ExperimentResults from "./components/ExperimentResults";
 import FlagExposures from "./components/FlagExposures";
 import IntegrationGuide from "./components/IntegrationGuide";
+import SnowflakeIntegration from "./components/SnowflakeIntegration";
 import UserManagement from "./components/UserManagement";
 import Login from "./components/Login";
 import Header from "./components/Header";
@@ -40,7 +41,7 @@ interface User {
   };
 }
 
-type MainTab = "flags" | "experiments" | "integration" | "users";
+type MainTab = "flags" | "experiments" | "integration" | "exports" | "users";
 type FlagSubTab = "manage" | "test" | "exposures";
 type ExperimentSubTab = "manage" | "assign" | "results";
 
@@ -82,6 +83,14 @@ export default function App() {
           setActiveTab('experiments');
         } else if (user.role === 'Administrator') {
           setActiveTab('users');
+        }
+      } else if (activeTab === "exports" && user.role !== 'Administrator') {
+        if (canViewSection('feature_flags')) {
+          setActiveTab('flags');
+        } else if (canViewSection('experiments')) {
+          setActiveTab('experiments');
+        } else if (canViewSection('integration')) {
+          setActiveTab('integration');
         }
       } else if (activeTab === "users" && user.role !== 'Administrator') {
         if (canViewSection('feature_flags')) {
@@ -200,16 +209,28 @@ export default function App() {
               </button>
             )}
             {user.role === 'Administrator' && (
-              <button
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  activeTab === "users"
-                    ? "bg-pink-600 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-                onClick={() => setActiveTab("users")}
-              >
-                👥 Users
-              </button>
+              <>
+                <button
+                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                    activeTab === "exports"
+                      ? "bg-cyan-600 text-white shadow-md"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("exports")}
+                >
+                  ❄️ Data Export
+                </button>
+                <button
+                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                    activeTab === "users"
+                      ? "bg-pink-600 text-white shadow-md"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("users")}
+                >
+                  👥 Users
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -361,6 +382,11 @@ export default function App() {
           <ProtectedRoute user={user} section="integration" permission="view">
             <IntegrationGuide />
           </ProtectedRoute>
+        )}
+
+        {/* Data Export Section */}
+        {activeTab === "exports" && user.role === 'Administrator' && (
+          <SnowflakeIntegration />
         )}
 
         {/* Users Section */}
