@@ -233,18 +233,18 @@ function SnowflakeIntegration() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg shadow-lg p-6 text-center">
-        <h2 className="text-2xl font-bold text-white mb-2">❄️ Snowflake Integration</h2>
-        <p className="text-blue-100 text-sm">Export feature flag, experiment, and exposure data to Snowflake</p>
+      <div className="border-b border-gray-200 pb-4">
+        <h2 className="text-2xl font-semibold text-gray-900">Snowflake Integration</h2>
+        <p className="text-gray-600 text-sm mt-1">Export feature flag, experiment, and exposure data to Snowflake</p>
       </div>
 
       {/* Configuration Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white border border-gray-200 p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Snowflake Configuration</h3>
+          <h3 className="text-lg font-medium text-gray-900">Configuration</h3>
           {isConfigured && (
-            <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
-              ✅ Configured
+            <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
+              Configured
             </span>
           )}
         </div>
@@ -252,11 +252,11 @@ function SnowflakeIntegration() {
         {/* Configuration Summary (when already configured) */}
         {isConfigured && !showConfigForm && (
           <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-gray-50 border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-800 font-medium">✅ Snowflake is connected and ready</p>
-                  <div className="mt-2 text-sm text-green-700 space-y-1">
+                  <p className="text-gray-800 font-medium">Snowflake is connected and ready</p>
+                  <div className="mt-2 text-sm text-gray-600 space-y-1">
                     <p><span className="font-medium">Account:</span> {config.account}</p>
                     <p><span className="font-medium">User:</span> {config.user}</p>
                     <p><span className="font-medium">Warehouse:</span> {config.warehouse}</p>
@@ -266,10 +266,9 @@ function SnowflakeIntegration() {
                 </div>
                 <button
                   onClick={() => setShowConfigForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded font-medium transition-colors flex items-center space-x-2"
                 >
-                  <span>⚙️</span>
-                  <span>Edit Config</span>
+                  <span>Edit</span>
                 </button>
               </div>
             </div>
@@ -279,18 +278,15 @@ function SnowflakeIntegration() {
                 type="button"
                 onClick={testConnection}
                 disabled={isConnecting}
-                className="bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                className="bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white px-4 py-2 rounded font-medium transition-colors"
               >
                 {isConnecting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    <span>Testing...</span>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2 inline-block"></div>
+                    Testing...
                   </>
                 ) : (
-                  <>
-                    <span>🔍</span>
-                    <span>Test Connection</span>
-                  </>
+                  "Test Connection"
                 )}
               </button>
             </div>
@@ -307,9 +303,9 @@ function SnowflakeIntegration() {
         {(!isConfigured || showConfigForm) && (
           <>
             {showConfigForm && isConfigured && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800 text-sm">
-                  ⚠️ You are editing the Snowflake configuration. Changes will be saved automatically.
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200">
+                <p className="text-gray-700 text-sm">
+                  You are editing the Snowflake configuration. Changes will be saved automatically.
                 </p>
               </div>
             )}
@@ -324,7 +320,7 @@ function SnowflakeIntegration() {
                 type="text"
                 value={config.account}
                 onChange={(e) => setConfig({ ...config, account: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                 placeholder="your-account.snowflakecomputing.com"
                 required
               />
@@ -337,7 +333,7 @@ function SnowflakeIntegration() {
                 type="text"
                 value={config.user}
                 onChange={(e) => setConfig({ ...config, user: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                 placeholder="username"
                 required
               />
@@ -353,7 +349,7 @@ function SnowflakeIntegration() {
                 type="password"
                 value={config.password}
                 onChange={(e) => setConfig({ ...config, password: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                 placeholder={isConfigured ? "Enter password to update config" : "password"}
                 required={!isConfigured}
               />
@@ -366,7 +362,7 @@ function SnowflakeIntegration() {
                 type="text"
                 value={config.warehouse}
                 onChange={(e) => setConfig({ ...config, warehouse: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                 placeholder="COMPUTE_WH"
                 required
               />
@@ -382,7 +378,7 @@ function SnowflakeIntegration() {
                 type="text"
                 value={config.database}
                 onChange={(e) => setConfig({ ...config, database: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                 placeholder="OPTIFORK_DB"
                 required
               />
@@ -395,7 +391,7 @@ function SnowflakeIntegration() {
                 type="text"
                 value={config.schema}
                 onChange={(e) => setConfig({ ...config, schema: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                 placeholder="PUBLIC"
                 required
               />
@@ -406,18 +402,15 @@ function SnowflakeIntegration() {
             <button
               type="submit"
               disabled={isConnecting}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+              className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white px-4 py-2 rounded font-medium transition-colors"
             >
               {isConnecting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  <span>Configuring...</span>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2 inline-block"></div>
+                  Configuring...
                 </>
               ) : (
-                <>
-                  <span>⚙️</span>
-                  <span>{showConfigForm && isConfigured ? 'Update Config' : 'Configure & Test'}</span>
-                </>
+                showConfigForm && isConfigured ? 'Update Config' : 'Configure & Test'
               )}
             </button>
 
@@ -428,10 +421,9 @@ function SnowflakeIntegration() {
                   setShowConfigForm(false);
                   setConnectionStatus('');
                 }}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded font-medium transition-colors"
               >
-                <span>❌</span>
-                <span>Cancel</span>
+                Cancel
               </button>
             )}
           </div>
@@ -448,8 +440,8 @@ function SnowflakeIntegration() {
 
       {/* Export Section */}
       {isConfigured && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Export</h3>
+        <div className="bg-white border border-gray-200 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Data Export</h3>
 
           <div className="space-y-4">
             {/* Data Type Selection */}
@@ -466,9 +458,9 @@ function SnowflakeIntegration() {
                 ].map(({ key, label, description }) => (
                   <label
                     key={key}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                    className={`flex items-center space-x-2 px-3 py-2 border cursor-pointer transition-colors ${
                       selectedDataTypes.includes(key)
-                        ? 'bg-blue-50 border-blue-300 text-blue-700'
+                        ? 'bg-gray-100 border-gray-400 text-gray-900'
                         : 'bg-white border-gray-300 hover:bg-gray-50'
                     }`}
                   >
@@ -496,7 +488,7 @@ function SnowflakeIntegration() {
                 <select
                   value={sinceHours}
                   onChange={(e) => setSinceHours(Number(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                 >
                   <option value={1}>Last 1 hour</option>
                   <option value={6}>Last 6 hours</option>
@@ -512,41 +504,36 @@ function SnowflakeIntegration() {
               <button
                 onClick={() => handleExport(false)}
                 disabled={isExporting}
-                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white px-4 py-2 rounded font-medium transition-colors"
               >
                 {isExporting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    <span>Exporting...</span>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2 inline-block"></div>
+                    Exporting...
                   </>
                 ) : (
-                  <>
-                    <span>📤</span>
-                    <span>Export Now</span>
-                  </>
+                  'Export Now'
                 )}
               </button>
 
               <button
                 onClick={() => handleExport(true)}
                 disabled={isExporting}
-                className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                className="bg-gray-700 hover:bg-gray-800 disabled:opacity-50 text-white px-4 py-2 rounded font-medium transition-colors"
               >
-                <span>📋</span>
-                <span>Full Export</span>
+                Full Export
               </button>
 
               <button
                 onClick={loadExportStatus}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded font-medium transition-colors"
               >
-                <span>🔄</span>
-                <span>Refresh Status</span>
+                Refresh Status
               </button>
             </div>
 
             {exportMessage && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="p-3 bg-gray-50 border border-gray-200">
                 <p className="text-sm font-medium">{exportMessage}</p>
               </div>
             )}
@@ -557,36 +544,35 @@ function SnowflakeIntegration() {
       {/* Status Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Table Counts */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Snowflake Table Status</h3>
+        <div className="bg-white border border-gray-200 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Table Status</h3>
           <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-              <span className="font-medium">🚩 Feature Flags</span>
-              <span className="text-blue-600 font-bold">{tableCounts.optifork_feature_flags}</span>
+            <div className="flex justify-between items-center p-3 bg-gray-50 border border-gray-200">
+              <span className="font-medium">Feature Flags</span>
+              <span className="text-gray-900 font-medium">{tableCounts.optifork_feature_flags}</span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-              <span className="font-medium">👁️ Flag Exposures</span>
-              <span className="text-green-600 font-bold">{tableCounts.optifork_flag_exposures}</span>
+            <div className="flex justify-between items-center p-3 bg-gray-50 border border-gray-200">
+              <span className="font-medium">Flag Exposures</span>
+              <span className="text-gray-900 font-medium">{tableCounts.optifork_flag_exposures}</span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-              <span className="font-medium">🧪 Experiments</span>
-              <span className="text-purple-600 font-bold">{tableCounts.optifork_experiments}</span>
+            <div className="flex justify-between items-center p-3 bg-gray-50 border border-gray-200">
+              <span className="font-medium">Experiments</span>
+              <span className="text-gray-900 font-medium">{tableCounts.optifork_experiments}</span>
             </div>
           </div>
         </div>
 
         {/* Recent Exports */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Export History</h3>
+        <div className="bg-white border border-gray-200 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Export History</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {recentExports.length === 0 ? (
               <div className="text-center text-gray-500 py-4">
-                <div className="text-2xl mb-2">📊</div>
                 <p className="text-sm">No exports yet</p>
               </div>
             ) : (
               recentExports.map((exp, index) => (
-                <div key={index} className={`p-3 border rounded-lg ${getStatusColor(exp.status)}`}>
+                <div key={index} className={`p-3 border ${getStatusColor(exp.status)}`}>
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-medium capitalize">{exp.export_type.replace('_', ' ')}</div>

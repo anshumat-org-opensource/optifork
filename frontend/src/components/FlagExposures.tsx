@@ -78,21 +78,20 @@ function FlagExposures({ selectedFlag }: FlagExposuresProps) {
   return (
     <div className="space-y-6">
       {/* Header and Controls */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-              <span className="mr-3">📊</span>
+            <h2 className="text-xl font-medium text-gray-900">
               Feature Flag Exposures
             </h2>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 text-sm mt-1">
               Track when users are exposed to feature flags and their outcomes
             </p>
           </div>
           <button
             onClick={fetchExposures}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+            className="px-4 py-2 bg-gray-900 text-white hover:bg-black disabled:bg-gray-400"
           >
             {loading ? "Loading..." : "Refresh"}
           </button>
@@ -107,7 +106,7 @@ function FlagExposures({ selectedFlag }: FlagExposuresProps) {
             <select
               value={selectedFlagFilter}
               onChange={(e) => setSelectedFlagFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
             >
               <option value="">All Flags</option>
               {availableFlags.map(flag => (
@@ -120,21 +119,21 @@ function FlagExposures({ selectedFlag }: FlagExposuresProps) {
         {/* Statistics */}
         {exposures.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{exposures.length}</div>
-              <div className="text-sm text-blue-800">Total Exposures</div>
+            <div className="bg-gray-50 border border-gray-200 p-4">
+              <div className="text-2xl font-medium text-gray-900">{exposures.length}</div>
+              <div className="text-sm text-gray-700">Total Exposures</div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{stats.enabled}</div>
-              <div className="text-sm text-green-800">Enabled</div>
+            <div className="bg-gray-50 border border-gray-200 p-4">
+              <div className="text-2xl font-medium text-gray-900">{stats.enabled}</div>
+              <div className="text-sm text-gray-700">Enabled</div>
             </div>
-            <div className="bg-red-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{stats.disabled}</div>
-              <div className="text-sm text-red-800">Disabled</div>
+            <div className="bg-gray-50 border border-gray-200 p-4">
+              <div className="text-2xl font-medium text-gray-900">{stats.disabled}</div>
+              <div className="text-sm text-gray-700">Disabled</div>
             </div>
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{stats.enabledPercentage}%</div>
-              <div className="text-sm text-purple-800">Enabled Rate</div>
+            <div className="bg-gray-50 border border-gray-200 p-4">
+              <div className="text-2xl font-medium text-gray-900">{stats.enabledPercentage}%</div>
+              <div className="text-sm text-gray-700">Enabled Rate</div>
             </div>
           </div>
         )}
@@ -142,21 +141,20 @@ function FlagExposures({ selectedFlag }: FlagExposuresProps) {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg">
+        <div className="bg-gray-50 border border-gray-200 text-gray-800 p-4">
           {error}
         </div>
       )}
 
       {/* Exposures List */}
-      <div className="bg-white rounded-lg shadow-lg">
+      <div className="bg-white border border-gray-200">
         {loading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mx-auto"></div>
             <p className="mt-2 text-gray-600">Loading exposures...</p>
           </div>
         ) : exposures.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="text-gray-400 text-4xl mb-4">📊</div>
             <p className="text-gray-500">
               {selectedFlagFilter 
                 ? `No exposures found for flag "${selectedFlagFilter}"` 
@@ -169,7 +167,7 @@ function FlagExposures({ selectedFlag }: FlagExposuresProps) {
         ) : (
           <div className="overflow-hidden">
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800">Recent Exposures</h3>
+              <h3 className="text-lg font-medium text-gray-900">Recent Exposures</h3>
             </div>
             <div className="divide-y divide-gray-200">
               {exposures.map((exposure) => (
@@ -189,11 +187,7 @@ function FlagExposures({ selectedFlag }: FlagExposuresProps) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        exposure.enabled 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <div className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium">
                         {exposure.enabled ? 'Enabled' : 'Disabled'}
                       </div>
                       <div className="text-sm text-gray-500 mt-1">
