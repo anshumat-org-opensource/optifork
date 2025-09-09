@@ -144,38 +144,37 @@ function UserManagement() {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'Administrator': return '👑';
-      case 'Developer': return '👨‍💻';
-      case 'Data Analyst': return '📊';
-      case 'Viewer': return '👀';
-      default: return '👤';
+      case 'Administrator': return 'A';
+      case 'Developer': return 'D';
+      case 'Data Analyst': return 'DA';
+      case 'Viewer': return 'V';
+      default: return 'U';
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg shadow-lg p-6 text-center">
-        <h2 className="text-2xl font-bold text-white mb-2">👥 User Management</h2>
-        <p className="text-purple-100 text-sm">Manage user accounts and permissions</p>
+      <div className="bg-white border border-gray-200 p-6">
+        <h2 className="text-2xl font-medium text-gray-900 mb-2">User Management</h2>
+        <p className="text-gray-600 text-sm">Manage user accounts and permissions</p>
       </div>
 
       {/* Create User Button */}
       <div className="flex justify-end">
         <button
           onClick={() => setShowCreateForm(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+          className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 font-medium transition-colors flex items-center space-x-2"
         >
-          <span>➕</span>
           <span>Create User</span>
         </button>
       </div>
 
       {/* Create User Form */}
       {showCreateForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white border border-gray-200 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
+            <h3 className="text-lg font-medium text-gray-900">Create New User</h3>
             <button
               onClick={() => setShowCreateForm(false)}
               className="text-gray-500 hover:text-gray-700"
@@ -192,7 +191,7 @@ function UserManagement() {
                   type="text"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                   required
                 />
               </div>
@@ -202,7 +201,7 @@ function UserManagement() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                   required
                 />
               </div>
@@ -215,7 +214,7 @@ function UserManagement() {
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                   required
                 />
               </div>
@@ -224,7 +223,7 @@ function UserManagement() {
                 <select
                   value={formData.role}
                   onChange={(e) => handleRoleChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                 >
                   {Object.keys(ROLE_PRESETS).map(role => (
                     <option key={role} value={role}>{role}</option>
@@ -243,7 +242,7 @@ function UserManagement() {
               </button>
               <button
                 type="submit"
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 font-medium transition-colors"
               >
                 Create User
               </button>
@@ -253,9 +252,9 @@ function UserManagement() {
       )}
 
       {/* Users List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">User Accounts</h3>
+          <h3 className="text-lg font-medium text-gray-900">User Accounts</h3>
         </div>
 
         <div className="divide-y divide-gray-200">
@@ -263,7 +262,7 @@ function UserManagement() {
             <div key={user.id} className="p-6 hover:bg-gray-50 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gray-600 flex items-center justify-center">
                     <span className="text-white font-bold text-sm">
                       {user.username.charAt(0).toUpperCase()}
                     </span>
@@ -272,7 +271,7 @@ function UserManagement() {
                   <div>
                     <div className="flex items-center space-x-2">
                       <h4 className="font-medium text-gray-900">{user.username}</h4>
-                      <span className={`text-xs px-2 py-1 rounded-full border ${getRoleColor(user.role)}`}>
+                      <span className={`text-xs px-2 py-1 border ${getRoleColor(user.role)}`}>
                         {getRoleIcon(user.role)} {user.role}
                       </span>
                     </div>
@@ -280,16 +279,16 @@ function UserManagement() {
                     
                     <div className="mt-2 flex flex-wrap gap-1 text-xs">
                       {user.permissions.feature_flags.view && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">🚩 Flags</span>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700">Flags</span>
                       )}
                       {user.permissions.experiments.view && (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded">🧪 Experiments</span>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700">Experiments</span>
                       )}
                       {user.permissions.exposures.view && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">📊 Exposures</span>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700">Exposures</span>
                       )}
                       {user.permissions.integration.view && (
-                        <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">🔌 Integration</span>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700">Integration</span>
                       )}
                     </div>
                   </div>
@@ -299,10 +298,10 @@ function UserManagement() {
                   {user.username !== 'admin' && (
                     <button
                       onClick={() => handleDeleteUser(user.username)}
-                      className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                      className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-50 transition-colors"
                       title="Delete User"
                     >
-                      🗑️
+                      ×
                     </button>
                   )}
                 </div>
@@ -313,7 +312,6 @@ function UserManagement() {
 
         {Object.keys(users).length === 0 && (
           <div className="p-12 text-center text-gray-500">
-            <div className="text-4xl mb-4">👥</div>
             <p>No users found</p>
           </div>
         )}

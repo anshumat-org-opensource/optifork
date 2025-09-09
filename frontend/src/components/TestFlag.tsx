@@ -94,20 +94,15 @@ const TestFlag = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">🧪</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">Test Feature Flag</h2>
-              <p className="text-blue-100 text-sm">Evaluate flag behavior with custom user attributes</p>
-            </div>
+      <div className="bg-white border border-gray-200">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <div>
+            <h2 className="text-xl font-medium text-gray-900">Test Feature Flag</h2>
+            <p className="text-gray-600 text-sm mt-1">Evaluate flag behavior with custom user attributes</p>
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Flag Selection */}
             <div className="space-y-6">
@@ -121,7 +116,7 @@ const TestFlag = () => {
                     const flag = flags.find(f => f.name === e.target.value);
                     setSelectedFlag(flag || null);
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition-colors"
                 >
                   <option value="">Choose a feature flag...</option>
                   {flags.map((flag) => (
@@ -133,8 +128,8 @@ const TestFlag = () => {
               </div>
 
               {selectedFlag && (
-                <div className="p-4 bg-gray-50 rounded-lg border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Flag Details</h3>
+                <div className="p-4 bg-gray-50 border border-gray-200">
+                  <h3 className="font-medium text-gray-900 mb-2">Flag Details</h3>
                   <div className="space-y-2 text-sm">
                     <div>
                       <span className="font-medium text-gray-600">Description:</span>
@@ -142,7 +137,7 @@ const TestFlag = () => {
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Base Rollout:</span>
-                      <span className="ml-2 font-mono text-blue-600">{(selectedFlag.rollout * 100).toFixed(1)}%</span>
+                      <span className="ml-2 font-mono text-gray-900">{(selectedFlag.rollout * 100).toFixed(1)}%</span>
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Targeting Rules:</span>
@@ -151,10 +146,10 @@ const TestFlag = () => {
                       ) : (
                         <div className="mt-1 space-y-1">
                           {selectedFlag.rules.map((rule, idx) => (
-                            <div key={idx} className="ml-2 font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                              <span className="text-blue-600 font-medium">{rule.field}</span>
+                            <div key={idx} className="ml-2 font-mono text-xs bg-gray-100 px-2 py-1 border border-gray-200">
+                              <span className="text-gray-900 font-medium">{rule.field}</span>
                               <span className="text-gray-500 mx-1">{rule.op}</span>
-                              <span className="text-green-600 font-medium">{rule.value}</span>
+                              <span className="text-gray-700 font-medium">{rule.value}</span>
                             </div>
                           ))}
                         </div>
@@ -173,7 +168,7 @@ const TestFlag = () => {
                   placeholder="e.g., user_12345"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition-colors"
                 />
               </div>
             </div>
@@ -187,7 +182,7 @@ const TestFlag = () => {
                   </label>
                   <button
                     onClick={formatJSON}
-                    className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                    className="text-xs px-2 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                   >
                     Format JSON
                   </button>
@@ -196,7 +191,7 @@ const TestFlag = () => {
                   value={userAttributes}
                   onChange={(e) => setUserAttributes(e.target.value)}
                   rows={12}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm resize-none transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500 font-mono text-sm resize-none transition-colors"
                   placeholder='{
   "country": "US",
   "age": 25,
@@ -208,9 +203,9 @@ const TestFlag = () => {
                 </p>
               </div>
 
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <h4 className="font-medium text-green-800 mb-2">💡 How Flag Evaluation Works</h4>
-                <ol className="text-sm text-green-700 space-y-1 list-decimal list-inside">
+              <div className="p-4 bg-gray-50 border border-gray-200">
+                <h4 className="font-medium text-gray-900 mb-2">How Flag Evaluation Works</h4>
+                <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
                   <li>Check targeting rules first (if any match, use them)</li>
                   <li>If no rules match, use base rollout percentage</li>
                   <li>User ID is hashed for consistent assignment</li>
@@ -222,13 +217,7 @@ const TestFlag = () => {
           {/* Test Results */}
           {result && (
             <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className={`p-4 rounded-lg ${
-                result.includes("ENABLED") 
-                  ? 'bg-green-50 text-green-800 border border-green-200' 
-                  : result.includes("DISABLED")
-                  ? 'bg-red-50 text-red-800 border border-red-200'
-                  : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
-              }`}>
+              <div className="p-4 bg-gray-50 text-gray-800 border border-gray-200">
                 <div className="font-medium">{result}</div>
               </div>
             </div>
@@ -240,7 +229,7 @@ const TestFlag = () => {
               <button
                 onClick={handleTest}
                 disabled={isLoading || !selectedFlag || !userId.trim()}
-                className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                className="px-8 py-2 bg-gray-900 text-white font-medium hover:bg-black disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
               >
                 {isLoading ? (
                   <>
@@ -248,10 +237,7 @@ const TestFlag = () => {
                     <span>Testing...</span>
                   </>
                 ) : (
-                  <>
-                    <span>🧪</span>
-                    <span>Test Feature Flag</span>
-                  </>
+                  <span>Test Feature Flag</span>
                 )}
               </button>
             </div>

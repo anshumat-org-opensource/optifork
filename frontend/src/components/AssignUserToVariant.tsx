@@ -76,7 +76,7 @@ function AssignUserToVariant() {
     try {
       parsedAttributes = JSON.parse(userAttributes);
     } catch (err) {
-      setError("❌ Invalid JSON format in user attributes");
+      setError("Invalid JSON format in user attributes");
       return;
     }
 
@@ -101,10 +101,10 @@ function AssignUserToVariant() {
       if (!res.ok) throw new Error(data.detail || "Failed to assign user");
 
       setAssignment(
-        `✅ User "${data.user_id}" assigned to variant "${data.variant}" in experiment "${data.experiment}"`
+        `User "${data.user_id}" assigned to variant "${data.variant}" in experiment "${data.experiment}"`
       );
     } catch (err: any) {
-      setError("❌ " + err.message);
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -121,20 +121,17 @@ function AssignUserToVariant() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-8 py-6">
+      <div className="bg-white border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">👤</span>
-            </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">User Assignment</h2>
-              <p className="text-purple-100 text-sm">Assign users to experiment variants with custom attributes</p>
+              <h2 className="text-2xl font-medium text-gray-900">User Assignment</h2>
+              <p className="text-gray-600 text-sm">Assign users to experiment variants with custom attributes</p>
             </div>
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Experiment Selection */}
             <div className="space-y-6">
@@ -148,7 +145,7 @@ function AssignUserToVariant() {
                     const experiment = experiments.find(exp => exp.name === e.target.value);
                     setSelectedExperiment(experiment || null);
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors"
                 >
                   <option value="">Choose an experiment...</option>
                   {experiments.map((exp) => (
@@ -160,8 +157,8 @@ function AssignUserToVariant() {
               </div>
 
               {selectedExperiment && (
-                <div className="p-4 bg-gray-50 rounded-lg border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Experiment Details</h3>
+                <div className="p-4 bg-gray-50 border">
+                  <h3 className="font-medium text-gray-800 mb-2">Experiment Details</h3>
                   <div className="space-y-2 text-sm">
                     <div>
                       <span className="font-medium text-gray-600">Description:</span>
@@ -169,10 +166,10 @@ function AssignUserToVariant() {
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Status:</span>
-                      <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
+                      <span className={`ml-2 px-2 py-1 text-xs font-medium ${
                         selectedExperiment.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-gray-100 text-gray-800'
+                          : 'bg-gray-100 text-gray-800'
                       }`}>
                         {selectedExperiment.status}
                       </span>
@@ -180,7 +177,7 @@ function AssignUserToVariant() {
                     {selectedExperiment.flag_id && getLinkedFlag(selectedExperiment.flag_id) && (
                       <div>
                         <span className="font-medium text-gray-600">Linked Flag:</span>
-                        <span className="ml-2 text-blue-600 font-medium">
+                        <span className="ml-2 text-gray-600 font-medium">
                           {getLinkedFlag(selectedExperiment.flag_id)?.name}
                         </span>
                       </div>
@@ -191,7 +188,7 @@ function AssignUserToVariant() {
                         {selectedExperiment.variants.map((variant) => (
                           <div key={variant.id} className="flex justify-between">
                             <span>{variant.name}</span>
-                            <span className="font-mono text-purple-600">{(variant.traffic_split * 100).toFixed(1)}%</span>
+                            <span className="font-mono text-gray-600">{(variant.traffic_split * 100).toFixed(1)}%</span>
                           </div>
                         ))}
                       </div>
@@ -209,7 +206,7 @@ function AssignUserToVariant() {
                   placeholder="e.g., user_12345"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors"
                 />
               </div>
             </div>
@@ -223,7 +220,7 @@ function AssignUserToVariant() {
                   </label>
                   <button
                     onClick={formatJSON}
-                    className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                    className="text-xs px-2 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                   >
                     Format JSON
                   </button>
@@ -244,9 +241,9 @@ function AssignUserToVariant() {
                 </p>
               </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-800 mb-2">💡 Tip</h4>
-                <p className="text-sm text-blue-700">
+              <div className="p-4 bg-gray-50 border border-gray-200">
+                <h4 className="font-medium text-gray-800 mb-2">Tip</h4>
+                <p className="text-sm text-gray-700">
                   User attributes are passed as query parameters to the assignment API. 
                   Make sure the values match any targeting rules defined in the linked feature flag.
                 </p>
@@ -258,13 +255,13 @@ function AssignUserToVariant() {
           {(assignment || error) && (
             <div className="mt-8 pt-6 border-t border-gray-200">
               {assignment && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 font-medium">{assignment}</p>
+                <div className="p-4 bg-gray-50 border border-gray-200">
+                  <p className="text-gray-800 font-medium">{assignment}</p>
                 </div>
               )}
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-800 font-medium">{error}</p>
+                <div className="p-4 bg-gray-50 border border-gray-200">
+                  <p className="text-gray-800 font-medium">{error}</p>
                 </div>
               )}
             </div>
@@ -276,7 +273,7 @@ function AssignUserToVariant() {
               <button
                 onClick={handleAssign}
                 disabled={isLoading || !selectedExperiment || !userId.trim()}
-                className="px-8 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                className="px-8 py-3 bg-gray-900 text-white font-medium hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
               >
                 {isLoading ? (
                   <>
@@ -285,7 +282,6 @@ function AssignUserToVariant() {
                   </>
                 ) : (
                   <>
-                    <span>👤</span>
                     <span>Assign User to Variant</span>
                   </>
                 )}

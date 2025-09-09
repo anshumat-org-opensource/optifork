@@ -50,6 +50,7 @@ export default function App() {
   const [flagSubTab, setFlagSubTab] = useState<FlagSubTab>("manage");
   const [experimentSubTab, setExperimentSubTab] = useState<ExperimentSubTab>("manage");
   const [user, setUser] = useState<User | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('optifork_user');
@@ -165,234 +166,264 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header user={user} onLogout={handleLogout} />
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Main Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-1 flex space-x-1">
-            {canViewSection('feature_flags') && (
-              <button
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  activeTab === "flags"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-                onClick={() => setActiveTab("flags")}
-              >
-                🚩 Feature Flags
-              </button>
-            )}
-            {canViewSection('experiments') && (
-              <button
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  activeTab === "experiments"
-                    ? "bg-green-600 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-                onClick={() => setActiveTab("experiments")}
-              >
-                🧪 Experiments
-              </button>
-            )}
-            {canViewSection('integration') && (
-              <button
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  activeTab === "integration"
-                    ? "bg-purple-600 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-                onClick={() => setActiveTab("integration")}
-              >
-                🔌 Integration
-              </button>
-            )}
-            {user.role === 'Administrator' && (
-              <>
-                <button
-                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                    activeTab === "exports"
-                      ? "bg-cyan-600 text-white shadow-md"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
-                  onClick={() => setActiveTab("exports")}
-                >
-                  ❄️ Data Export
-                </button>
-                <button
-                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                    activeTab === "users"
-                      ? "bg-pink-600 text-white shadow-md"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
-                  onClick={() => setActiveTab("users")}
-                >
-                  👥 Users
-                </button>
-              </>
-            )}
-          </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Collapsible Sidebar */}
+      <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}>
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          {!isCollapsed && (
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">OptiFork</h1>
+              <p className="text-xs text-gray-500">{user.username}</p>
+            </div>
+          )}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 rounded-md hover:bg-gray-100 text-gray-500"
+          >
+            {isCollapsed ? '→' : '←'}
+          </button>
         </div>
 
-        {/* Feature Flags Section */}
-        {activeTab === "flags" && (
-          <div className="space-y-6">
-            {/* Sub Navigation */}
-            <div className="flex justify-center">
-              <div className="bg-white rounded-lg shadow-sm p-1 flex space-x-1">
-                {(user.permissions.feature_flags.view || user.permissions.feature_flags.manage) && (
-                  <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      flagSubTab === "manage"
-                        ? "bg-blue-100 text-blue-700"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setFlagSubTab("manage")}
-                  >
-                    ⚙️ Manage
-                  </button>
-                )}
-                {user.permissions.feature_flags.test && (
-                  <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      flagSubTab === "test"
-                        ? "bg-blue-100 text-blue-700"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setFlagSubTab("test")}
-                  >
-                    🧪 Test
-                  </button>
-                )}
-                {user.permissions.exposures.view && (
-                  <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      flagSubTab === "exposures"
-                        ? "bg-blue-100 text-blue-700"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setFlagSubTab("exposures")}
-                  >
-                    📊 Exposures
-                  </button>
-                )}
-              </div>
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2">
+          {canViewSection('feature_flags') && (
+            <div>
+              <button
+                onClick={() => setActiveTab("flags")}
+                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "flags"
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-base">🚩</span>
+                {!isCollapsed && <span className="ml-3">Feature Flags</span>}
+              </button>
+              {activeTab === "flags" && !isCollapsed && (
+                <div className="ml-6 mt-2 space-y-1">
+                  {(user.permissions.feature_flags.view || user.permissions.feature_flags.manage) && (
+                    <button
+                      onClick={() => setFlagSubTab("manage")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        flagSubTab === "manage" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Manage
+                    </button>
+                  )}
+                  {user.permissions.feature_flags.test && (
+                    <button
+                      onClick={() => setFlagSubTab("test")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        flagSubTab === "test" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Test
+                    </button>
+                  )}
+                  {user.permissions.exposures.view && (
+                    <button
+                      onClick={() => setFlagSubTab("exposures")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        flagSubTab === "exposures" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Exposures
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-
-            {/* Flag Content */}
-            {flagSubTab === "manage" && (
-              <div className="space-y-8">
-                <ProtectedRoute user={user} section="feature_flags" permission="manage">
-                  <CreateFlag />
-                </ProtectedRoute>
-                <ProtectedRoute user={user} section="feature_flags" permission="view">
-                  <ListFlags />
-                </ProtectedRoute>
-              </div>
-            )}
-            
-            {flagSubTab === "test" && (
-              <ProtectedRoute user={user} section="feature_flags" permission="test">
-                <TestFlag />
-              </ProtectedRoute>
-            )}
-            
-            {flagSubTab === "exposures" && (
-              <ProtectedRoute user={user} section="exposures" permission="view">
-                <FlagExposures />
-              </ProtectedRoute>
-            )}
-          </div>
-        )}
-
-        {/* Experiments Section */}
-        {activeTab === "experiments" && (
-          <div className="space-y-6">
-            {/* Sub Navigation */}
-            <div className="flex justify-center">
-              <div className="bg-white rounded-lg shadow-sm p-1 flex space-x-1">
-                {(user.permissions.experiments.view || user.permissions.experiments.manage) && (
-                  <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      experimentSubTab === "manage"
-                        ? "bg-green-100 text-green-700"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setExperimentSubTab("manage")}
-                  >
-                    ⚙️ Manage
-                  </button>
-                )}
-                {user.permissions.experiments.assign && (
-                  <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      experimentSubTab === "assign"
-                        ? "bg-green-100 text-green-700"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setExperimentSubTab("assign")}
-                  >
-                    👤 Assign Users
-                  </button>
-                )}
-                {user.permissions.experiments.results && (
-                  <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      experimentSubTab === "results"
-                        ? "bg-green-100 text-green-700"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setExperimentSubTab("results")}
-                  >
-                    📈 Results
-                  </button>
-                )}
-              </div>
+          )}
+          
+          {canViewSection('experiments') && (
+            <div>
+              <button
+                onClick={() => setActiveTab("experiments")}
+                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "experiments"
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-base">🧪</span>
+                {!isCollapsed && <span className="ml-3">Experiments</span>}
+              </button>
+              {activeTab === "experiments" && !isCollapsed && (
+                <div className="ml-6 mt-2 space-y-1">
+                  {(user.permissions.experiments.view || user.permissions.experiments.manage) && (
+                    <button
+                      onClick={() => setExperimentSubTab("manage")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        experimentSubTab === "manage" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Manage
+                    </button>
+                  )}
+                  {user.permissions.experiments.assign && (
+                    <button
+                      onClick={() => setExperimentSubTab("assign")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        experimentSubTab === "assign" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Assign Users
+                    </button>
+                  )}
+                  {user.permissions.experiments.results && (
+                    <button
+                      onClick={() => setExperimentSubTab("results")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        experimentSubTab === "results" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Results
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+          )}
 
-            {/* Experiment Content */}
-            {experimentSubTab === "manage" && (
-              <div className="space-y-8">
-                <ProtectedRoute user={user} section="experiments" permission="manage">
-                  <CreateExperiment />
+          {canViewSection('integration') && (
+            <button
+              onClick={() => setActiveTab("integration")}
+              className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === "integration"
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <span className="text-base">🔌</span>
+              {!isCollapsed && <span className="ml-3">Integration</span>}
+            </button>
+          )}
+
+          {user.role === 'Administrator' && (
+            <>
+              <button
+                onClick={() => setActiveTab("exports")}
+                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "exports"
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-base">📊</span>
+                {!isCollapsed && <span className="ml-3">Data Export</span>}
+              </button>
+              <button
+                onClick={() => setActiveTab("users")}
+                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "users"
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-base">👥</span>
+                {!isCollapsed && <span className="ml-3">Users</span>}
+              </button>
+            </>
+          )}
+        </nav>
+
+        {/* User Info & Logout */}
+        <div className="p-4 border-t border-gray-200">
+          {!isCollapsed ? (
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+            >
+              <span>🚪</span>
+              <span className="ml-3">Logout</span>
+            </button>
+          ) : (
+            <button 
+              onClick={handleLogout}
+              className="w-full flex justify-center py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+              title="Logout"
+            >
+              🚪
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        <Header user={user} onLogout={handleLogout} />
+        <main className="flex-1 p-6 bg-white">
+          {/* Feature Flags Section */}
+          {activeTab === "flags" && (
+            <div className="space-y-6">
+              {flagSubTab === "manage" && (
+                <div className="space-y-6">
+                  <ProtectedRoute user={user} section="feature_flags" permission="manage">
+                    <CreateFlag />
+                  </ProtectedRoute>
+                  <ProtectedRoute user={user} section="feature_flags" permission="view">
+                    <ListFlags />
+                  </ProtectedRoute>
+                </div>
+              )}
+              {flagSubTab === "test" && (
+                <ProtectedRoute user={user} section="feature_flags" permission="test">
+                  <TestFlag />
                 </ProtectedRoute>
-                <ProtectedRoute user={user} section="experiments" permission="view">
-                  <ListExperiments />
+              )}
+              {flagSubTab === "exposures" && (
+                <ProtectedRoute user={user} section="exposures" permission="view">
+                  <FlagExposures />
                 </ProtectedRoute>
-              </div>
-            )}
-            
-            {experimentSubTab === "assign" && (
-              <ProtectedRoute user={user} section="experiments" permission="assign">
-                <AssignUserToVariant />
-              </ProtectedRoute>
-            )}
-            
-            {experimentSubTab === "results" && (
-              <ProtectedRoute user={user} section="experiments" permission="results">
-                <ExperimentResults />
-              </ProtectedRoute>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
 
-        {/* Integration Section */}
-        {activeTab === "integration" && (
-          <ProtectedRoute user={user} section="integration" permission="view">
-            <IntegrationGuide />
-          </ProtectedRoute>
-        )}
+          {/* Experiments Section */}
+          {activeTab === "experiments" && (
+            <div className="space-y-6">
+              {experimentSubTab === "manage" && (
+                <div className="space-y-6">
+                  <ProtectedRoute user={user} section="experiments" permission="manage">
+                    <CreateExperiment />
+                  </ProtectedRoute>
+                  <ProtectedRoute user={user} section="experiments" permission="view">
+                    <ListExperiments />
+                  </ProtectedRoute>
+                </div>
+              )}
+              {experimentSubTab === "assign" && (
+                <ProtectedRoute user={user} section="experiments" permission="assign">
+                  <AssignUserToVariant />
+                </ProtectedRoute>
+              )}
+              {experimentSubTab === "results" && (
+                <ProtectedRoute user={user} section="experiments" permission="results">
+                  <ExperimentResults />
+                </ProtectedRoute>
+              )}
+            </div>
+          )}
 
-        {/* Data Export Section */}
-        {activeTab === "exports" && user.role === 'Administrator' && (
-          <SnowflakeIntegration />
-        )}
+          {/* Integration Section */}
+          {activeTab === "integration" && (
+            <ProtectedRoute user={user} section="integration" permission="view">
+              <IntegrationGuide />
+            </ProtectedRoute>
+          )}
 
-        {/* Users Section */}
-        {activeTab === "users" && user.role === 'Administrator' && (
-          <UserManagement />
-        )}
+          {/* Data Export Section */}
+          {activeTab === "exports" && user.role === 'Administrator' && (
+            <SnowflakeIntegration />
+          )}
+
+          {/* Users Section */}
+          {activeTab === "users" && user.role === 'Administrator' && (
+            <UserManagement />
+          )}
+        </main>
       </div>
     </div>
   );

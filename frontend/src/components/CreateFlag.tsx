@@ -57,20 +57,15 @@ function CreateFlag() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">🚩</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">Create Feature Flag</h2>
-            <p className="text-blue-100 text-sm">Control feature rollouts with targeting rules</p>
-          </div>
+    <div className="max-w-4xl mx-auto bg-white border border-gray-200">
+      <div className="border-b border-gray-200 px-6 py-4">
+        <div>
+          <h2 className="text-xl font-medium text-gray-900">Create Feature Flag</h2>
+          <p className="text-gray-600 text-sm mt-1">Control feature rollouts with targeting rules</p>
         </div>
       </div>
 
-      <div className="p-8">
+      <div className="p-6">
         <div className="space-y-5">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -81,7 +76,7 @@ function CreateFlag() {
             placeholder="e.g., new_checkout_flow"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
           />
         </div>
 
@@ -98,7 +93,7 @@ function CreateFlag() {
               onChange={(e) => setRollout((parseFloat(e.target.value) / 100).toString())}
               className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               style={{
-                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${parseFloat(rollout) * 100}%, #e5e7eb ${parseFloat(rollout) * 100}%, #e5e7eb 100%)`
+                background: `linear-gradient(to right, #374151 0%, #374151 ${parseFloat(rollout) * 100}%, #e5e7eb ${parseFloat(rollout) * 100}%, #e5e7eb 100%)`
               }}
             />
             <div className="flex items-center space-x-2">
@@ -109,7 +104,7 @@ function CreateFlag() {
                 step="1"
                 value={Math.round(parseFloat(rollout) * 100)}
                 onChange={(e) => setRollout((parseFloat(e.target.value || "0") / 100).toString())}
-                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded"
+                className="w-16 px-2 py-1 text-sm border border-gray-300"
               />
               <span className="text-sm text-gray-600">%</span>
             </div>
@@ -128,7 +123,7 @@ function CreateFlag() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
           />
         </div>
 
@@ -143,7 +138,7 @@ function CreateFlag() {
             <button
               type="button"
               onClick={addRule}
-              className="flex items-center space-x-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+              className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
             >
               <span className="text-sm">+</span>
               <span className="text-sm font-medium">Add Rule</span>
@@ -152,7 +147,7 @@ function CreateFlag() {
           
           <div className="space-y-3">
             {rules.map((rule, index) => (
-              <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div key={index} className="p-4 bg-gray-50 border border-gray-200">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-gray-700">Rule {index + 1}</span>
                   <button
@@ -171,7 +166,7 @@ function CreateFlag() {
                       placeholder="e.g., country, age"
                       value={rule.field}
                       onChange={(e) => updateRule(index, "field", e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                     />
                   </div>
                   <div>
@@ -179,7 +174,7 @@ function CreateFlag() {
                     <select
                       value={rule.op}
                       onChange={(e) => updateRule(index, "op", e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                     >
                       <option value="eq">equals</option>
                       <option value="ne">not equals</option>
@@ -194,7 +189,7 @@ function CreateFlag() {
                       placeholder="e.g., US, 18"
                       value={rule.value}
                       onChange={(e) => updateRule(index, "value", e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                     />
                   </div>
                 </div>
@@ -203,7 +198,6 @@ function CreateFlag() {
             
             {rules.length === 0 && (
               <div className="text-center py-8 text-gray-400">
-                <div className="mb-2">🎯</div>
                 <p className="text-sm">No targeting rules defined</p>
                 <p className="text-xs">Add rules to override rollout for specific users</p>
               </div>
@@ -216,7 +210,7 @@ function CreateFlag() {
         <button
           onClick={handleCreate}
           disabled={!name.trim()}
-          className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors"
+          className="flex-1 bg-gray-900 text-white py-2 px-4 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors"
         >
           Create Feature Flag
         </button>
@@ -229,17 +223,17 @@ function CreateFlag() {
             setRules([]);
             setMessage("");
           }}
-          className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+          className="px-6 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors"
         >
           Reset
         </button>
       </div>
 
       {message && (
-        <div className={`mt-4 p-3 rounded-lg ${
+        <div className={`mt-4 p-3 ${
           message.startsWith('✅') 
-            ? 'bg-green-50 text-green-800 border border-green-200' 
-            : 'bg-red-50 text-red-800 border border-red-200'
+            ? 'bg-gray-50 text-gray-800 border border-gray-200' 
+            : 'bg-gray-50 text-gray-800 border border-gray-200'
         }`}>
           {message}
         </div>

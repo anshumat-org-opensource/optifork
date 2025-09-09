@@ -80,20 +80,20 @@ function CreateExperiment() {
 
     // Validation
     if (!name.trim()) {
-      setMessage("❌ Experiment name is required");
+      setMessage("Experiment name is required");
       setIsLoading(false);
       return;
     }
 
     if (variants.some(v => !v.name.trim())) {
-      setMessage("❌ All variant names are required");
+      setMessage("All variant names are required");
       setIsLoading(false);
       return;
     }
 
     const totalSplit = getTotalTrafficSplit();
     if (Math.abs(totalSplit - 1.0) > 0.001) {
-      setMessage(`❌ Traffic splits must sum to 1.0 (current: ${totalSplit.toFixed(2)})`);
+      setMessage(`Traffic splits must sum to 1.0 (current: ${totalSplit.toFixed(2)})`);
       setIsLoading(false);
       return;
     }
@@ -115,7 +115,7 @@ function CreateExperiment() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to create experiment");
 
-      setMessage(`✅ Experiment '${data.name}' created successfully!`);
+      setMessage(`Experiment '${data.name}' created successfully!`);
       
       // Reset form
       setName("");
@@ -127,27 +127,24 @@ function CreateExperiment() {
         { name: "variant_a", traffic_split: 0.5 },
       ]);
     } catch (err: any) {
-      setMessage("❌ " + err.message);
+      setMessage(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-      <div className="bg-gradient-to-r from-green-500 to-green-600 px-8 py-6">
+    <div className="max-w-4xl mx-auto bg-white border border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">🧪</span>
-          </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">Create New Experiment</h2>
-            <p className="text-green-100 text-sm">Design and configure your A/B test</p>
+            <h2 className="text-2xl font-medium text-gray-900">Create New Experiment</h2>
+            <p className="text-gray-600 text-sm">Design and configure your A/B test</p>
           </div>
         </div>
       </div>
 
-      <div className="p-8">
+      <div className="p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Basic Info */}
           <div className="space-y-6">
@@ -160,7 +157,7 @@ function CreateExperiment() {
                 placeholder="e.g., homepage_redesign_test"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors"
               />
             </div>
 
@@ -173,7 +170,7 @@ function CreateExperiment() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none"
+                className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors resize-none"
               />
             </div>
 
@@ -184,7 +181,7 @@ function CreateExperiment() {
               <select
                 value={selectedFlagName}
                 onChange={(e) => handleFlagSelection(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors"
               >
                 <option value="">Select a feature flag (optional)</option>
                 {availableFlags.map((flag) => (
@@ -195,7 +192,7 @@ function CreateExperiment() {
               </select>
               {selectedFlagName && (
                 <p className="text-sm text-green-600 mt-2">
-                  🔗 Linked to feature flag: <strong>{selectedFlagName}</strong>
+                  Linked to feature flag: <strong>{selectedFlagName}</strong>
                 </p>
               )}
             </div>
@@ -215,14 +212,14 @@ function CreateExperiment() {
 
             <div className="space-y-3">
               {variants.map((variant, index) => (
-                <div key={index} className="flex gap-3 items-center p-4 bg-gray-50 rounded-lg">
+                <div key={index} className="flex gap-3 items-center p-4 bg-gray-50">
                   <div className="flex-1">
                     <input
                       type="text"
                       placeholder={`Variant ${index + 1} name`}
                       value={variant.name}
                       onChange={(e) => handleVariantChange(index, "name", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                     />
                   </div>
                   <div className="w-32">
@@ -236,16 +233,16 @@ function CreateExperiment() {
                       onChange={(e) =>
                         handleVariantChange(index, "traffic_split", e.target.value)
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                     />
                   </div>
                   <button
                     onClick={() => removeVariant(index)}
                     disabled={variants.length <= 1}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-md disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 text-gray-500 hover:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
                     title="Remove variant"
                   >
-                    🗑️
+                    ×
                   </button>
                 </div>
               ))}
@@ -253,15 +250,15 @@ function CreateExperiment() {
 
             <button
               onClick={addVariant}
-              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-green-400 hover:text-green-600 transition-colors"
+              className="w-full py-2 border-2 border-dashed border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
             >
               + Add Variant
             </button>
 
             {getTotalTrafficSplit() !== 1.0 && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  ⚠️ Traffic splits should sum to 1.0 for proper distribution
+              <div className="p-3 bg-gray-50 border border-gray-200">
+                <p className="text-sm text-gray-800">
+                  Traffic splits should sum to 1.0 for proper distribution
                 </p>
               </div>
             )}
@@ -274,7 +271,7 @@ function CreateExperiment() {
             <div>
               {message && (
                 <div className={`text-sm font-medium ${
-                  message.includes('✅') ? 'text-green-600' : 'text-red-600'
+                  message.includes('successfully') ? 'text-gray-700' : 'text-gray-700'
                 }`}>
                   {message}
                 </div>
@@ -283,7 +280,7 @@ function CreateExperiment() {
             <button
               onClick={handleSubmit}
               disabled={isLoading || !name.trim() || getTotalTrafficSplit() !== 1.0}
-              className="px-8 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+              className="px-8 py-3 bg-gray-900 text-white font-medium hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
             >
               {isLoading ? (
                 <>
@@ -292,7 +289,6 @@ function CreateExperiment() {
                 </>
               ) : (
                 <>
-                  <span>🧪</span>
                   <span>Create Experiment</span>
                 </>
               )}

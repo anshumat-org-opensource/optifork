@@ -610,13 +610,10 @@ function IntegrationGuide() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white border border-gray-200 p-6">
         <div className="flex items-center mb-4">
-          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-            <span className="text-purple-600 font-bold">🔌</span>
-          </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Integration Guide</h2>
+            <h2 className="text-2xl font-medium text-gray-900">Integration Guide</h2>
             <p className="text-gray-600 text-sm">
               Learn how to integrate OptiFork feature flags into your application
             </p>
@@ -629,9 +626,9 @@ function IntegrationGuide() {
             <button
               key={example.language}
               onClick={() => setSelectedLanguage(example.language)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`px-4 py-2 font-medium transition-all ${
                 selectedLanguage === example.language
-                  ? 'bg-purple-600 text-white shadow-md'
+                  ? 'bg-gray-900 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -641,39 +638,39 @@ function IntegrationGuide() {
         </div>
 
         {/* API Endpoint Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-blue-800 mb-3">🔗 API Endpoints</h3>
+        <div className="bg-gray-50 border border-gray-200 p-4 mb-6">
+          <h3 className="font-medium text-gray-800 mb-3">API Endpoints</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
-              <h4 className="font-medium text-blue-700 mb-2">📍 Feature Flags</h4>
-              <div className="font-mono bg-blue-100 px-3 py-2 rounded">
+              <h4 className="font-medium text-gray-700 mb-2">Feature Flags</h4>
+              <div className="font-mono bg-gray-100 px-3 py-2">
                 <strong>Base URL:</strong> http://localhost:8000
               </div>
-              <div className="font-mono bg-blue-100 px-3 py-2 rounded">
+              <div className="font-mono bg-gray-100 px-3 py-2">
                 <strong>Check Flag:</strong><br/>
                 GET /flags/{"{flag_name}"}?user_id={"{user_id}"}&{"{...attributes}"}
               </div>
-              <div className="font-mono bg-blue-100 px-3 py-2 rounded text-xs">
+              <div className="font-mono bg-gray-100 px-3 py-2 text-xs">
                 <strong>Response:</strong><br/>
                 {`{ "flag": "...", "user_id": "...", "enabled": true }`}
               </div>
             </div>
             <div className="space-y-2">
-              <h4 className="font-medium text-green-700 mb-2">🧪 Experiments</h4>
-              <div className="font-mono bg-green-100 px-3 py-2 rounded">
+              <h4 className="font-medium text-gray-700 mb-2">Experiments</h4>
+              <div className="font-mono bg-gray-100 px-3 py-2">
                 <strong>Assign User:</strong><br/>
                 GET /experiments/{"{experiment_name}"}/assign?user_id={"{user_id}"}&{"{...attributes}"}
               </div>
-              <div className="font-mono bg-green-100 px-3 py-2 rounded text-xs">
+              <div className="font-mono bg-gray-100 px-3 py-2 text-xs">
                 <strong>Response:</strong><br/>
                 {`{ "experiment": "...", "user_id": "...", "variant": "control" }`}
               </div>
             </div>
           </div>
           
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-yellow-800 text-sm">
-              <strong>💡 Tip:</strong> Pass user attributes as JSON in your application, then convert to URL parameters for API calls. 
+          <div className="mt-4 p-3 bg-gray-50 border border-gray-200">
+            <p className="text-gray-700 text-sm">
+              <strong>Tip:</strong> Pass user attributes as JSON in your application, then convert to URL parameters for API calls. 
               Both feature flags and experiments support the same attribute format.
             </p>
           </div>
@@ -684,18 +681,18 @@ function IntegrationGuide() {
       {selectedExample && (
         <div className="space-y-6">
           {selectedExample.examples.map((example, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div key={index} className="bg-white border border-gray-200">
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800">{example.title}</h3>
+                <h3 className="text-lg font-medium text-gray-800">{example.title}</h3>
                 <p className="text-gray-600 text-sm mt-1">{example.description}</p>
               </div>
               
               <div className="relative">
                 <button
                   onClick={() => copyToClipboard(example.code, example.title)}
-                  className={`absolute top-4 right-4 px-3 py-1 rounded text-xs font-medium transition-all ${
+                  className={`absolute top-4 right-4 px-3 py-1 text-xs font-medium transition-all ${
                     copiedCode === example.title
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-gray-200 text-gray-800'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -712,15 +709,14 @@ function IntegrationGuide() {
       )}
 
       {/* Best Practices */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-          <span className="mr-2">💡</span>
+      <div className="bg-white border border-gray-200 p-6">
+        <h3 className="text-xl font-medium text-gray-900 mb-4 flex items-center">
           Best Practices
         </h3>
         
         <div className="space-y-4">
           <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+            <div className="w-2 h-2 bg-gray-400 mt-2"></div>
             <div>
               <h4 className="font-medium text-gray-800">Fail Closed</h4>
               <p className="text-gray-600 text-sm">Always default to the safe behavior (usually the old feature) when the flag service is unavailable.</p>
@@ -728,7 +724,7 @@ function IntegrationGuide() {
           </div>
           
           <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+            <div className="w-2 h-2 bg-gray-400 mt-2"></div>
             <div>
               <h4 className="font-medium text-gray-800">Cache Responsibly</h4>
               <p className="text-gray-600 text-sm">Consider caching flag values for a short period (1-5 minutes) to reduce API calls, but ensure timely updates.</p>
@@ -736,7 +732,7 @@ function IntegrationGuide() {
           </div>
           
           <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+            <div className="w-2 h-2 bg-gray-400 mt-2"></div>
             <div>
               <h4 className="font-medium text-gray-800">Consistent User Experience</h4>
               <p className="text-gray-600 text-sm">Once a user sees a feature, they should continue to see it during their session to avoid confusion.</p>
@@ -744,7 +740,7 @@ function IntegrationGuide() {
           </div>
           
           <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+            <div className="w-2 h-2 bg-gray-400 mt-2"></div>
             <div>
               <h4 className="font-medium text-gray-800">Monitor Performance</h4>
               <p className="text-gray-600 text-sm">Set timeouts for flag checks (recommended: 100-500ms) to avoid blocking your application.</p>
@@ -752,7 +748,7 @@ function IntegrationGuide() {
           </div>
           
           <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+            <div className="w-2 h-2 bg-gray-400 mt-2"></div>
             <div>
               <h4 className="font-medium text-gray-800">Clean Up Old Flags</h4>
               <p className="text-gray-600 text-sm">Remove feature flag code once features are fully rolled out or permanently disabled.</p>

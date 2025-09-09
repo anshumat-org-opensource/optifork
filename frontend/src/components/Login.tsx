@@ -92,16 +92,16 @@ function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-green-500 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Login Card */}
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 text-center">
-            <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white font-bold text-2xl">🚩</span>
+        <div className="bg-white border border-gray-200">
+          <div className="px-8 py-6 text-center border-b border-gray-200">
+            <div className="w-16 h-16 bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <span className="text-gray-600 font-medium text-2xl">OF</span>
             </div>
-            <h1 className="text-2xl font-bold text-white">OptiFork</h1>
-            <p className="text-blue-100 text-sm">Feature Flag & Experimentation Platform</p>
+            <h1 className="text-2xl font-medium text-gray-900">OptiFork</h1>
+            <p className="text-gray-600 text-sm">Feature Flag & Experimentation Platform</p>
           </div>
 
           <div className="p-8">
@@ -114,7 +114,7 @@ function Login({ onLogin }: LoginProps) {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors"
                   placeholder="Enter username"
                   required
                 />
@@ -128,22 +128,22 @@ function Login({ onLogin }: LoginProps) {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors"
                   placeholder="Enter password"
                   required
                 />
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm font-medium">{error}</p>
+                <div className="p-3 bg-gray-50 border border-gray-200">
+                  <p className="text-gray-700 text-sm font-medium">{error}</p>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2"
+                className="w-full bg-gray-900 text-white py-3 px-4 font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2"
               >
                 {isLoading ? (
                   <>
@@ -152,7 +152,6 @@ function Login({ onLogin }: LoginProps) {
                   </>
                 ) : (
                   <>
-                    <span>🔐</span>
                     <span>Sign In</span>
                   </>
                 )}
