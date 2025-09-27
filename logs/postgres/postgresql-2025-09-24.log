@@ -1,0 +1,22 @@
+2025-09-24 16:35:26.943 UTC [41] LOG:  starting PostgreSQL 15.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+2025-09-24 16:35:26.944 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-09-24 16:35:26.946 UTC [45] LOG:  database system was shut down at 2025-09-24 16:35:26 UTC
+2025-09-24 16:35:26.949 UTC [41] LOG:  database system is ready to accept connections
+2025-09-24 16:35:27.148 UTC [41] LOG:  received fast shutdown request
+2025-09-24 16:35:27.149 UTC [41] LOG:  aborting any active transactions
+2025-09-24 16:35:27.150 UTC [41] LOG:  background worker "logical replication launcher" (PID 48) exited with exit code 1
+2025-09-24 16:35:27.151 UTC [43] LOG:  shutting down
+2025-09-24 16:35:27.151 UTC [43] LOG:  checkpoint starting: shutdown immediate
+2025-09-24 16:35:27.198 UTC [43] LOG:  checkpoint complete: wrote 943 buffers (1.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.016 s, sync=0.031 s, total=0.048 s; sync files=310, longest=0.017 s, average=0.001 s; distance=4357 kB, estimate=4357 kB
+2025-09-24 16:35:27.204 UTC [41] LOG:  database system is shut down
+2025-09-24 16:35:27.271 UTC [1] LOG:  starting PostgreSQL 15.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+2025-09-24 16:35:27.271 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2025-09-24 16:35:27.271 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2025-09-24 16:35:27.272 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-09-24 16:35:27.273 UTC [61] LOG:  database system was shut down at 2025-09-24 16:35:27 UTC
+2025-09-24 16:35:27.275 UTC [1] LOG:  database system is ready to accept connections
+2025-09-24 16:39:33.560 UTC [257] ERROR:  relation "feature_flags" does not exist at character 15
+2025-09-24 16:39:33.560 UTC [257] STATEMENT:  SELECT * FROM feature_flags;
+2025-09-24 16:40:27.338 UTC [59] LOG:  checkpoint starting: time
+2025-09-24 16:40:31.619 UTC [59] LOG:  checkpoint complete: wrote 44 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.267 s, sync=0.007 s, total=4.281 s; sync files=12, longest=0.004 s, average=0.001 s; distance=258 kB, estimate=258 kB
+2025-09-25 19:20:07.940 UTC [1] LOG:  received fast shutdown request

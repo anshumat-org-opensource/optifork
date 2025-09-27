@@ -1,56 +1,91 @@
-# 🚩 OptiFork - Feature Flag & Experimentation Platform
+# OptiFork 🚀
 
-OptiFork is a lightweight, self-hosted platform for managing **feature flags**, **targeting rules**, and **A/B experiments** with real-time exposure tracking and analytics.
+**Open Source Feature Flag and A/B Testing Platform**
+
+OptiFork is a production-ready, self-hosted feature flag and A/B testing platform designed for modern applications. Built with FastAPI and React, it provides enterprise-grade capabilities with the flexibility of open source.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-green.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
 
 ## ✨ Features
 
-- 🚩 **Feature Flags** with percentage rollouts and targeting rules
-- 🧪 **A/B Testing** with variant assignment and exposure logging  
-- 📊 **Real-time Analytics** and exposure tracking dashboard
-- 🔌 **Multi-language SDKs** (JavaScript, Python, Java, Go)
-- 🐳 **Docker Deploy** - Get running in 60 seconds
-- 🎯 **Smart Targeting** - User attributes, geo, custom rules
-- 📈 **Export Data** - JSON, CSV, PostgreSQL, BigQuery ready
+### Core Features
+- 🎯 **Feature Flags**: Boolean flags with percentage rollouts and rule-based targeting
+- 🧪 **A/B Testing**: Multi-variant experiments with statistical analysis
+- 👥 **User Targeting**: Advanced rule-based user segmentation
+- 📊 **Real-time Analytics**: Flag exposure tracking and experiment metrics
+- 🔌 **Snowflake Integration**: Direct data warehouse connectivity
 
-## 🚀 Quick Start with Docker
+### Production Ready
+- 🗄️ **PostgreSQL Support**: Production database with connection pooling
+- ⚡ **Redis Caching**: High-performance caching layer
+- 🛡️ **Security Middleware**: Rate limiting, CORS, security headers
+- 📈 **Monitoring**: Health checks, Prometheus metrics, system stats
+- 💾 **Backup & Restore**: Automated backups with compression
+- 🐳 **Docker Support**: Production-ready containerization
 
-### Prerequisites
+### Developer Experience
+- 🚀 **Fast Setup**: One-command Docker deployment
+- 📚 **API Documentation**: Auto-generated OpenAPI/Swagger docs
+- 🔧 **Configuration**: Environment-based config management
+- 📝 **Logging**: Structured logging with configurable levels
 
-Before starting, ensure you have:
+## 🚀 Quick Start
 
-- **Docker Desktop** installed and running
-  - [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
-  - Ensure Docker daemon is running (`docker --version` should work)
-- **Git** for cloning the repository
-- **8GB+ RAM** recommended for smooth Docker operation
-
-### Installation Steps
+### Using Docker (Recommended)
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/anupamprataps/optifork.git
+   git clone https://github.com/yourusername/optifork.git
    cd optifork
    ```
-   
-   > **Note**: Replace the repository URL with your actual GitHub repository URL
 
-2. **Start the application**
+2. **Start with Docker Compose**
    ```bash
-   ./deploy.sh dev
-   ```
+   # Development (SQLite)
+   docker-compose up -d
    
-   This will:
-   - Build all Docker images (backend, frontend, database)
-   - Start all services in development mode
-   - Set up the database with required tables
-   - Launch the web interface
+   # Production (PostgreSQL + Redis)
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
 
 3. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
 
-   **That's it!** OptiFork is now running at:
-   - 🌐 **Dashboard**: http://localhost:80 or http://localhost:3000
-   - 🚀 **API**: http://localhost:8000  
-   - 📚 **API Docs**: http://localhost:8000/docs
+### Manual Setup
+
+#### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- PostgreSQL (optional, defaults to SQLite)
+- Redis (optional, for caching)
+
+#### Backend Setup
+```bash
+cd backend
+pip install -r requirements.txt
+
+# Configure environment (optional)
+cp ../.env.example .env
+# Edit .env with your settings
+
+# Initialize database
+python -c "from db import init_database; import asyncio; asyncio.run(init_database())"
+
+# Start backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Frontend Setup
+```bash
+cd frontend
+npm install
+npm start
+```
 
 ### ✅ Verify Installation
 

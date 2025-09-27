@@ -1,26 +1,41 @@
-version: '3.8'
-
 services:
-  # PostgreSQL Database (Optional - can use SQLite instead)
-  # postgres:
-  #   image: postgres:15-alpine
-  #   container_name: optifork-postgres
-  #   environment:
-  #     POSTGRES_DB: optifork
-  #     POSTGRES_USER: optifork
-  #     POSTGRES_PASSWORD: optifork_secret
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #     - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-  #   ports:
-  #     - "5432:5432"
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U optifork"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #   networks:
-  #     - optifork-network
+  # PostgreSQL Database (Production Ready)
+  postgres:
+    image: postgres:15-alpine
+    container_name: optifork-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-optifork}
+      POSTGRES_USER: ${POSTGRES_USER:-optifork}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-optifork_secret}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "${POSTGRES_PORT:-15432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-optifork} -d ${POSTGRES_DB:-optifork}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - optifork-network
+    restart: unless-stopped
+    # Production security settings
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
 
   # Backend API
   backend:
@@ -29,30 +44,43 @@ services:
       dockerfile: Dockerfile
     container_name: optifork-backend
     environment:
-      # Database configuration (SQLite by default)
-      DATABASE_URL: sqlite:///./data/optifork.db
-      # Uncomment below to use PostgreSQL instead
-      # DATABASE_URL: postgresql://optifork:optifork_secret@postgres:5432/optifork
+      # Database configuration - PostgreSQL
+      DATABASE_URL: postgresql://${POSTGRES_USER:-optifork}:${POSTGRES_PASSWORD:-optifork_secret}@postgres:5432/${POSTGRES_DB:-optifork}
+      
+      # Redis configuration
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       
       # API Configuration
       API_HOST: 0.0.0.0
       API_PORT: 8000
       
+      # Security settings
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      
       # CORS settings
-      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173,http://localhost:80"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:80}
+      
+      # Monitoring
+      ENABLE_METRICS: ${ENABLE_METRICS:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      
     volumes:
       - backend_data:/app/data
+      - ./logs:/app/logs  # Log persistence
     ports:
-      - "8000:8000"
-    depends_on: []
-      # Uncomment if using PostgreSQL
-      # - postgres
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/flags"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
     networks:
       - optifork-network
     restart: unless-stopped

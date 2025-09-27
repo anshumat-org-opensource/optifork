@@ -1,0 +1,169 @@
+name: ✨ Feature Request
+description: Suggest an idea or enhancement for OptiFork
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a new feature! Please fill out this form as completely as possible.
+        
+        💡 **Tip**: Before submitting, please check if a similar feature request already exists.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🚩 Problem Statement
+      description: Is your feature request related to a problem? Please describe the problem you're trying to solve.
+      placeholder: |
+        I'm always frustrated when...
+        Currently, there's no way to...
+        Users need to be able to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 💡 Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: |
+        I would like OptiFork to...
+        The feature should work by...
+        Users would be able to...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 🧩 Affected Component
+      description: Which part of OptiFork would this feature affect?
+      options:
+        - Frontend (React UI)
+        - Backend (FastAPI)
+        - API/Integration
+        - Database Schema
+        - CLI/Tooling
+        - Documentation
+        - DevOps/Deployment
+        - Multiple Components
+        - New Component
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 📈 Priority Level
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would be helpful
+        - High - Important for my use case
+        - Critical - Blocking my adoption
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternatives Considered
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: |
+        Alternative approach 1: ...
+        Alternative approach 2: ...
+        Current workaround: ...
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: 🎯 Use Cases
+      description: Provide specific use cases or scenarios where this feature would be beneficial.
+      placeholder: |
+        Use Case 1: As a product manager, I want to...
+        Use Case 2: As a developer, I need to...
+        Use Case 3: For compliance reasons, we must...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: ✅ Acceptance Criteria
+      description: What would need to be true for this feature to be considered complete?
+      placeholder: |
+        - [ ] Users can...
+        - [ ] The system should...
+        - [ ] Error handling for...
+        - [ ] Documentation includes...
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: 🎨 Mockups/Examples
+      description: If applicable, add mockups, wireframes, or examples from other tools.
+      placeholder: |
+        You can paste images here or describe the UI/UX:
+        - The button should be located...
+        - The workflow would be...
+        - Similar to how [other tool] does it...
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: 🔧 Estimated Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple - Small UI change or minor API addition
+        - Medium - New functionality with moderate complexity
+        - Complex - Major feature requiring significant changes
+        - Very Complex - Fundamental architecture changes
+        - I'm not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: implementation
+    attributes:
+      label: 🛠️ Implementation Willingness
+      description: Are you willing to help implement this feature?
+      options:
+        - label: I would like to work on this feature myself
+          required: false
+        - label: I can help with testing the implementation
+          required: false
+        - label: I can provide feedback during development
+          required: false
+        - label: I can help with documentation
+          required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 📝 Additional Context
+      description: Add any other context, links, or resources about the feature request.
+      placeholder: |
+        - Links to related issues or discussions
+        - References to similar features in other tools
+        - Technical constraints or considerations
+        - Business justification
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and feature requests
+          required: true
+        - label: I have clearly described the problem and proposed solution
+          required: true
+        - label: I have provided specific use cases for this feature
+          required: true
+        - label: This feature would benefit the broader OptiFork community
+          required: true
+        - label: I understand this is a volunteer-driven project and features take time
+          required: true

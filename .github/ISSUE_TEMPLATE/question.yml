@@ -1,0 +1,146 @@
+name: ❓ Question
+description: Ask a question about OptiFork usage, configuration, or development
+title: "[Question]: "
+labels: ["question", "needs-response"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your question! Please fill out this form to help us provide the best answer.
+        
+        💡 **Tip**: Check our [documentation](../../wiki) and [existing discussions](../../discussions) first.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: ❓ Your Question
+      description: What would you like to know about OptiFork?
+      placeholder: |
+        I'm trying to understand how to...
+        I'm having trouble with...
+        What's the best way to...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 🏷️ Question Category
+      description: What category does your question fall into?
+      options:
+        - Setup and Installation
+        - Configuration
+        - Feature Usage
+        - API Integration
+        - Deployment
+        - Performance
+        - Security
+        - Development/Contributing
+        - Troubleshooting
+        - Best Practices
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 📋 Context and Background
+      description: Provide context about what you're trying to achieve.
+      placeholder: |
+        I'm working on...
+        My goal is to...
+        I'm using OptiFork for...
+    validations:
+      required: true
+
+  - type: textarea
+    id: attempted
+    attributes:
+      label: 🔍 What I've Tried
+      description: What have you already tried or researched?
+      placeholder: |
+        I've looked at:
+        - Documentation section X
+        - GitHub issue #123
+        - Stack Overflow post
+        
+        I've tried:
+        - Approach A
+        - Configuration B
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 🖥️ Environment (if relevant)
+      description: If your question is environment-specific, please provide details.
+      placeholder: |
+        - OptiFork Version: 
+        - Deployment Method: 
+        - OS: 
+        - Browser: 
+        - Database: 
+        - Other relevant tools:
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 🎯 Expected Outcome
+      description: What would the ideal answer or solution look like?
+      placeholder: |
+        I expect to be able to...
+        The ideal solution would...
+        I'm looking for guidance on...
+
+  - type: checkboxes
+    id: urgency
+    attributes:
+      label: ⏰ Urgency
+      description: How urgent is this question?
+      options:
+        - label: This is blocking my current work
+          required: false
+        - label: I need this for an upcoming deadline
+          required: false
+        - label: This is for future planning
+          required: false
+        - label: This is just general curiosity
+          required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: 🤝 Contribution Interest
+      description: Would you be interested in contributing based on the answer?
+      options:
+        - label: I'd like to improve documentation based on the answer
+          required: false
+        - label: I'd be interested in implementing a related feature
+          required: false
+        - label: I could help others with similar questions
+          required: false
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: 📝 Additional Information
+      description: Any other information that might help us answer your question.
+      placeholder: |
+        Links to related resources...
+        Screenshots or code snippets...
+        Error messages...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched the documentation and existing issues
+          required: true
+        - label: I have provided sufficient context for my question
+          required: true
+        - label: I understand this is a community-driven project
+          required: true
