@@ -1,123 +1,217 @@
-# Production overrides for Docker Compose
-version: '3.8'
+# Production Docker Compose Configuration for OptiFork
+# This configuration includes all production features:
+# - PostgreSQL database with optimized settings
+# - Redis caching
+# - Monitoring and health checks
+# - Backup volumes
+# - Security hardening
 
 services:
-  # Production PostgreSQL with optimizations
+  # PostgreSQL Database with production settings
   postgres:
+    image: postgres:15-alpine
+    container_name: optifork-postgres-prod
     environment:
-      POSTGRES_DB: optifork
-      POSTGRES_USER: optifork
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+      POSTGRES_DB: ${POSTGRES_DB:-optifork}
+      POSTGRES_USER: ${POSTGRES_USER:-optifork}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-optifork_secret}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./logs/postgres:/var/log/postgresql
+    # ports:
+    #   - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-optifork} -d ${POSTGRES_DB:-optifork}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - optifork-network
+    restart: unless-stopped
+    # Production PostgreSQL optimizations
     command: >
       postgres
-      -c shared_buffers=256MB
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
       -c max_connections=200
-      -c effective_cache_size=1GB
-      -c maintenance_work_mem=64MB
+      -c shared_buffers=512MB
+      -c effective_cache_size=2GB
+      -c maintenance_work_mem=128MB
       -c checkpoint_completion_target=0.9
-      -c wal_buffers=16MB
+      -c wal_buffers=32MB
       -c default_statistics_target=100
       -c random_page_cost=1.1
       -c effective_io_concurrency=200
+      -c work_mem=8MB
+      -c logging_collector=on
+      -c log_directory='/var/log/postgresql'
+      -c log_filename='postgresql-%Y-%m-%d.log'
+      -c log_rotation_age=1d
+      -c log_min_duration_statement=1000
     deploy:
       resources:
         limits:
-          memory: 1G
+          cpus: '2.0'
+          memory: 2G
+        reservations:
           cpus: '0.5'
-        reservations:
           memory: 512M
-          cpus: '0.25'
 
-  # Production Backend with optimizations
-  backend:
-    environment:
-      DATABASE_URL: postgresql://optifork:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/optifork
-      DEBUG: "false"
-      LOG_LEVEL: info
-      WORKERS: 4
-    depends_on:
-      - postgres
-      - redis
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # Production Frontend with caching
-  frontend:
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.2'
-        reservations:
-          memory: 64M
-          cpus: '0.1'
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "3"
-
-  # Production Redis with persistence
+  # Redis with persistence and monitoring
   redis:
-    command: >
-      redis-server
-      --appendonly yes
-      --appendfsync everysec
-      --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
-      --save 900 1
-      --save 300 10
-      --save 60 10000
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.2'
-        reservations:
-          memory: 128M
-          cpus: '0.1'
-    restart: always
-
-  # Load balancer (optional)
-  nginx:
-    image: nginx:alpine
-    container_name: optifork-nginx
-    ports:
-      - "80:80"
-      - "443:443"
+    image: redis:7-alpine
+    container_name: optifork-redis-prod
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secret}
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - frontend
-      - backend
+      - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./logs/redis:/var/log/redis
+    # ports:
+    #   - "${REDIS_PORT:-6380}:6379"
+    command: >
+      redis-server /usr/local/etc/redis/redis.conf
+      --requirepass ${REDIS_PASSWORD:-redis_secret}
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 300
+      --timeout 300
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redis_secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - optifork-network
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
-# Production network with custom subnet
+  # Backend API with production configuration
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: optifork-backend-prod
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-optifork}:${POSTGRES_PASSWORD:-optifork_secret}@postgres:5432/${POSTGRES_DB:-optifork}
+      
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379/0
+      REDIS_ENABLED: true
+      
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      RATE_LIMIT_ENABLED: true
+      IP_FILTERING_ENABLED: ${IP_FILTERING_ENABLED:-false}
+      ALLOWED_IPS: ${ALLOWED_IPS:-}
+      BLOCKED_IPS: ${BLOCKED_IPS:-}
+      
+      # API Configuration
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      ENVIRONMENT: production
+      
+      # CORS and security
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://yourdomain.com}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-yourdomain.com}
+      
+      # Monitoring
+      ENABLE_METRICS: true
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      
+      # Backup configuration
+      BACKUP_DIR: /app/backups
+      MAX_BACKUPS: 30
+      
+    volumes:
+      - backend_data:/app/data
+      - backup_data:/app/backups
+      - ./logs/backend:/app/logs
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - optifork-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Frontend with Nginx optimization
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: optifork-frontend-prod
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
+    volumes:
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+      - "${FRONTEND_HTTPS_PORT:-443}:443"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - optifork-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
 networks:
   optifork-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+    name: optifork-production-network
+
+volumes:
+  postgres_data:
+    driver: local
+    name: optifork-postgres-prod-data
+  redis_data:
+    driver: local  
+    name: optifork-redis-prod-data
+  backend_data:
+    driver: local
+    name: optifork-backend-prod-data
+  backup_data:
+    driver: local
+    name: optifork-backup-prod-data

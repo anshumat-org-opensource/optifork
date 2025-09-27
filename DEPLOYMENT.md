@@ -1,6 +1,6 @@
-# 🐳 OptiFork Docker Deployment Guide
+# OptiFork Deployment Guide 🚀
 
-Deploy OptiFork with Docker in minutes! This guide covers everything from quick setup to production deployment.
+This guide covers different deployment strategies for OptiFork, from development to production environments.
 
 ## 🚀 Quick Start (SQLite)
 

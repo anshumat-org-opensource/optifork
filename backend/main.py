@@ -1,44 +1,107 @@
+import os
+import logging
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import hashlib
 from sqlalchemy.ext.asyncio import AsyncSession
-from db import SessionLocal, engine
+
+# Production imports
+from db import init_database, get_db
 from models import Base, SnowflakeConfig
 import crud as crud
 from routers import experiment_router
 from routers import integrations
-from scheduler import start_background_scheduler
+# from scheduler import start_background_scheduler
 
-app = FastAPI()
+# Production features (temporarily disabled)
+# from middleware import setup_security_middleware, limiter, rate_limit
+# from monitoring import router as monitoring_router
+# from backup import router as backup_router
+# from cache import init_cache, warm_up_cache
 
-# ✅ Enable CORS
+# Configure logging
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+if log_level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+    log_level = "INFO"
+
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+# Create FastAPI app with production settings
+app = FastAPI(
+    title="OptiFork",
+    description="Open Source Feature Flag and A/B Testing Platform",
+    version=os.getenv("APP_VERSION", "1.0.0"),
+    docs_url="/docs" if os.getenv("ENVIRONMENT", "development") == "development" else None,
+    redoc_url="/redoc" if os.getenv("ENVIRONMENT", "development") == "development" else None
+)
+
+# Setup CORS middleware - explicitly allow localhost origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or restrict this in prod
+    allow_origins=[
+        "http://localhost",
+        "http://localhost:3000", 
+        "http://localhost:80",
+        "http://127.0.0.1",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:80",
+        "*"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# ✅ Register routes
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "OptiFork"}
+
+# Register routers
+# app.include_router(monitoring_router)  # Health checks and metrics
+# app.include_router(backup_router)      # Backup and restore
 app.include_router(experiment_router.router)
 app.include_router(integrations.router)
 
-# ✅ Create DB tables on startup
+# Production startup sequence
 @app.on_event("startup")
 async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Initialize all production systems"""
+    logger.info("🚀 Starting OptiFork production server...")
     
-    # Start background export scheduler
-    start_background_scheduler()
+    # 1. Initialize database
+    db_success = await init_database()
+    if not db_success:
+        logger.error("❌ Database initialization failed")
+        raise Exception("Database initialization failed")
+    
+    # 2. Initialize cache - temporarily disabled
+    # await init_cache()
+    
+    # 3. Warm up cache with frequently accessed data - temporarily disabled
+    # await warm_up_cache()
+    
+    # 4. Start background scheduler - temporarily disabled
+    # start_background_scheduler()
+    
+    logger.info("✅ OptiFork production server started successfully")
 
-# ✅ Dependency to get DB session
-async def get_db():
-    async with SessionLocal() as session:
-        yield session
+@app.on_event("shutdown")
+async def shutdown():
+    """Cleanup on server shutdown"""
+    logger.info("🛑 Shutting down OptiFork server...")
+    
+    # Cleanup cache connections - temporarily disabled
+    # from cache import cache_manager
+    # await cache_manager.disconnect()
+    
+    logger.info("✅ OptiFork server shutdown complete")
 
 # ✅ Models for Feature Flag
 class RuleIn(BaseModel):
