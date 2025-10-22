@@ -13,6 +13,7 @@ from models import Base, SnowflakeConfig
 import crud as crud
 from routers import experiment_router
 from routers import integrations
+from routers import ai_experiments
 # from scheduler import start_background_scheduler
 
 # Production features (temporarily disabled)
@@ -68,6 +69,7 @@ async def health_check():
 # app.include_router(backup_router)      # Backup and restore
 app.include_router(experiment_router.router)
 app.include_router(integrations.router)
+app.include_router(ai_experiments.router)
 
 # Production startup sequence
 @app.on_event("startup")

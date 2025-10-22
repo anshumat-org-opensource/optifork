@@ -24,6 +24,11 @@ interface User {
     integration: {
       view: boolean;
     };
+    ai_experiments: {
+      view: boolean;
+      manage: boolean;
+      evaluate: boolean;
+    };
   };
 }
 
@@ -32,25 +37,29 @@ const ROLE_PRESETS = {
     feature_flags: { view: true, manage: true, test: true },
     experiments: { view: true, manage: true, assign: true, results: true },
     exposures: { view: true },
-    integration: { view: true }
+    integration: { view: true },
+    ai_experiments: { view: true, manage: true, evaluate: true }
   },
   'Developer': {
     feature_flags: { view: true, manage: true, test: true },
     experiments: { view: true, manage: false, assign: true, results: true },
     exposures: { view: true },
-    integration: { view: true }
+    integration: { view: true },
+    ai_experiments: { view: true, manage: true, evaluate: true }
   },
   'Data Analyst': {
     feature_flags: { view: true, manage: false, test: true },
     experiments: { view: true, manage: false, assign: false, results: true },
     exposures: { view: true },
-    integration: { view: false }
+    integration: { view: false },
+    ai_experiments: { view: true, manage: false, evaluate: true }
   },
   'Viewer': {
     feature_flags: { view: true, manage: false, test: false },
     experiments: { view: true, manage: false, assign: false, results: false },
     exposures: { view: false },
-    integration: { view: false }
+    integration: { view: false },
+    ai_experiments: { view: true, manage: false, evaluate: false }
   }
 };
 
@@ -289,6 +298,9 @@ function UserManagement() {
                       )}
                       {user.permissions.integration.view && (
                         <span className="px-2 py-1 bg-gray-100 text-gray-700">Integration</span>
+                      )}
+                      {user.permissions.ai_experiments.view && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700">AI Experiments</span>
                       )}
                     </div>
                   </div>

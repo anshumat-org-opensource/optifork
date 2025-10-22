@@ -19,13 +19,18 @@ interface User {
     integration: {
       view: boolean;
     };
+    ai_experiments: {
+      view: boolean;
+      manage: boolean;
+      evaluate: boolean;
+    };
   };
 }
 
 interface ProtectedRouteProps {
   user: User;
-  section: 'feature_flags' | 'experiments' | 'exposures' | 'integration';
-  permission: string; // 'view', 'manage', 'test', 'assign', 'results'
+  section: 'feature_flags' | 'experiments' | 'exposures' | 'integration' | 'ai_experiments';
+  permission: string; // 'view', 'manage', 'test', 'assign', 'results', 'evaluate'
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }
@@ -51,6 +56,7 @@ function AccessDenied({ section, permission }: { section: string; permission: st
       case 'experiments': return '🧪';
       case 'exposures': return '📊';
       case 'integration': return '🔌';
+      case 'ai_experiments': return '🤖';
       default: return '🔒';
     }
   };
@@ -61,6 +67,7 @@ function AccessDenied({ section, permission }: { section: string; permission: st
       case 'experiments': return 'Experiments';
       case 'exposures': return 'Exposures';
       case 'integration': return 'Integration';
+      case 'ai_experiments': return 'AI Experiments';
       default: return section;
     }
   };
@@ -72,6 +79,7 @@ function AccessDenied({ section, permission }: { section: string; permission: st
       case 'test': return 'test';
       case 'assign': return 'assign users';
       case 'results': return 'view results';
+      case 'evaluate': return 'evaluate';
       default: return permission;
     }
   };
