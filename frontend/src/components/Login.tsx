@@ -24,6 +24,11 @@ interface User {
     integration: {
       view: boolean;
     };
+    ai_experiments: {
+      view: boolean;
+      manage: boolean;
+      evaluate: boolean;
+    };
   };
 }
 
@@ -49,7 +54,8 @@ const getUsers = (): Record<string, User> => {
         feature_flags: { view: true, manage: true, test: true },
         experiments: { view: true, manage: true, assign: true, results: true },
         exposures: { view: true },
-        integration: { view: true }
+        integration: { view: true },
+        ai_experiments: { view: true, manage: true, evaluate: true }
       }
     }
   };
@@ -79,6 +85,8 @@ function Login({ onLogin }: LoginProps) {
     if (user) {
       const expectedPassword = username === 'admin' ? 'admin123' : user.password || username;
       if (password === expectedPassword) {
+        console.log('Login successful, user data:', user);
+        console.log('AI experiments permissions:', user.permissions.ai_experiments);
         localStorage.setItem('optifork_user', JSON.stringify(user));
         onLogin(user);
       } else {

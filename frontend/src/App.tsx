@@ -13,6 +13,10 @@ import UserManagement from "./components/UserManagement";
 import Login from "./components/Login";
 import Header from "./components/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
+import CreateAIExperiment from "./components/CreateAIExperiment";
+import ListAIExperiments from "./components/ListAIExperiments";
+import AIExperimentDetails from "./components/AIExperimentDetails";
+import Debug from "./components/Debug";
 
 interface User {
   id: string;
@@ -38,17 +42,24 @@ interface User {
     integration: {
       view: boolean;
     };
+    ai_experiments: {
+      view: boolean;
+      manage: boolean;
+      evaluate: boolean;
+    };
   };
 }
 
-type MainTab = "flags" | "experiments" | "integration" | "exports" | "users";
+type MainTab = "flags" | "experiments" | "ai-experiments" | "integration" | "exports" | "users" | "debug";
 type FlagSubTab = "manage" | "test" | "exposures";
 type ExperimentSubTab = "manage" | "assign" | "results";
+type AIExperimentSubTab = "manage" | "evaluate" | "results";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<MainTab>("flags");
   const [flagSubTab, setFlagSubTab] = useState<FlagSubTab>("manage");
   const [experimentSubTab, setExperimentSubTab] = useState<ExperimentSubTab>("manage");
+  const [aiExperimentSubTab, setAIExperimentSubTab] = useState<AIExperimentSubTab>("manage");
   const [user, setUser] = useState<User | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -162,7 +173,9 @@ export default function App() {
   }
 
   const canViewSection = (section: keyof User['permissions']) => {
-    return user.permissions[section]?.view === true;
+    const canView = user.permissions[section]?.view === true;
+    console.log(`Can view ${section}:`, canView, 'permissions:', user.permissions[section]);
+    return canView;
   };
 
   return (
@@ -287,6 +300,56 @@ export default function App() {
             </div>
           )}
 
+          {canViewSection('ai_experiments') && (
+            <div>
+              <button
+                onClick={() => setActiveTab("ai-experiments")}
+                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "ai-experiments"
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-base">🤖</span>
+                {!isCollapsed && <span className="ml-3">AI Experiments</span>}
+              </button>
+              {activeTab === "ai-experiments" && !isCollapsed && (
+                <div className="ml-6 mt-2 space-y-1">
+                  {(user.permissions.ai_experiments.view || user.permissions.ai_experiments.manage) && (
+                    <button
+                      onClick={() => setAIExperimentSubTab("manage")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        aiExperimentSubTab === "manage" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Manage
+                    </button>
+                  )}
+                  {user.permissions.ai_experiments.evaluate && (
+                    <button
+                      onClick={() => setAIExperimentSubTab("evaluate")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        aiExperimentSubTab === "evaluate" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Evaluate
+                    </button>
+                  )}
+                  {user.permissions.ai_experiments.view && (
+                    <button
+                      onClick={() => setAIExperimentSubTab("results")}
+                      className={`block w-full text-left px-3 py-1 rounded text-xs ${
+                        aiExperimentSubTab === "results" ? "text-gray-900 font-medium" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Results
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {canViewSection('integration') && (
             <button
               onClick={() => setActiveTab("integration")}
@@ -324,6 +387,17 @@ export default function App() {
               >
                 <span className="text-base">👥</span>
                 {!isCollapsed && <span className="ml-3">Users</span>}
+              </button>
+              <button
+                onClick={() => setActiveTab("debug")}
+                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "debug"
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-base">🐛</span>
+                {!isCollapsed && <span className="ml-3">Debug</span>}
               </button>
             </>
           )}
@@ -407,6 +481,35 @@ export default function App() {
             </div>
           )}
 
+          {/* AI Experiments Section */}
+          {activeTab === "ai-experiments" && (
+            <div className="space-y-6">
+              {aiExperimentSubTab === "manage" && (
+                <div className="space-y-6">
+                  <ProtectedRoute user={user} section="ai_experiments" permission="manage">
+                    <CreateAIExperiment />
+                  </ProtectedRoute>
+                  <ProtectedRoute user={user} section="ai_experiments" permission="view">
+                    <ListAIExperiments />
+                  </ProtectedRoute>
+                </div>
+              )}
+              {aiExperimentSubTab === "evaluate" && (
+                <ProtectedRoute user={user} section="ai_experiments" permission="evaluate">
+                  <AIExperimentDetails />
+                </ProtectedRoute>
+              )}
+              {aiExperimentSubTab === "results" && (
+                <ProtectedRoute user={user} section="ai_experiments" permission="view">
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Experiment Results</h2>
+                    <p className="text-gray-600">View evaluation results and performance metrics for your AI experiments.</p>
+                  </div>
+                </ProtectedRoute>
+              )}
+            </div>
+          )}
+
           {/* Integration Section */}
           {activeTab === "integration" && (
             <ProtectedRoute user={user} section="integration" permission="view">
@@ -422,6 +525,11 @@ export default function App() {
           {/* Users Section */}
           {activeTab === "users" && user.role === 'Administrator' && (
             <UserManagement />
+          )}
+
+          {/* Debug Section */}
+          {activeTab === "debug" && user.role === 'Administrator' && (
+            <Debug />
           )}
         </main>
       </div>
