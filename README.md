@@ -443,9 +443,10 @@ If you encounter issues not covered here:
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## License
+Originally released under the MIT License.  
+As of [DATE], OptiFork is licensed under the **Apache License, Version 2.0**,  
+maintained by the **Anshumat Foundation**, a registered nonprofit organization in India.
 
 ## 👨‍💻 Author
 
