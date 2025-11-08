@@ -444,9 +444,16 @@ If you encounter issues not covered here:
 5. Open a Pull Request
 
 ## License
-Originally released under the MIT License.  
-As of 8th Nov, 2025 , OptiFork is licensed under the **Apache License, Version 2.0**,  
-maintained by the **Anshumat Foundation**, a registered nonprofit organization in India.
+OptiFork was originally released under the MIT License.  
+As of **November 2025**, the project has been relicensed under the  
+**Apache License, Version 2.0**, maintained by the **Anshumat Foundation**,  
+a registered nonprofit organization in India.
+
+This change provides stronger patent protection and enterprise compatibility  
+while keeping OptiFork fully open source and free to use.
+
+See the [LICENSE](./LICENSE) file for the full text.
+
 
 ## 👨‍💻 Author
 
