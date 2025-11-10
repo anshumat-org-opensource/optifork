@@ -444,14 +444,32 @@ If you encounter issues not covered here:
 
 ## 🤝 Contributing
 
+We 💚 our contributors!  [![Contributors](https://img.shields.io/github/contributors/anshumat-org-opensource/optifork.svg)](https://github.com/anshumat-org-opensource/optifork/graphs/contributors)
+
+A big thank you to everyone who has helped make **OptiFork** better — from code and design to docs, ideas, and testing.
+
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit changes (`git commit -m 'Add amazing feature'`)
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-[![Contributors](https://img.shields.io/github/contributors/anshumat-org-opensource/optifork.svg)](https://github.com/anshumat-org-opensource/optifork/graphs/contributors)
+### 🏅 Contribution Stats
 
+![GitHub contributors](https://img.shields.io/github/contributors/anshumat-org-opensource/optifork?color=brightgreen&label=Contributors)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/anshumat-org-opensource/optifork?label=Commits%20per%20month)
+![GitHub last commit](https://img.shields.io/github/last-commit/anshumat-org-opensource/optifork?label=Last%20Commit)
+![GitHub pull requests](https://img.shields.io/github/issues-pr-closed/anshumat-org-opensource/optifork?label=PRs%20Merged)
+![GitHub issues](https://img.shields.io/github/issues-closed/anshumat-org-opensource/optifork?label=Issues%20Closed)
+![GitHub forks](https://img.shields.io/github/forks/anshumat-org-opensource/optifork?style=social)
+![GitHub stars](https://img.shields.io/github/stars/anshumat-org-opensource/optifork?style=social)
+
+### 💬 Community Links
+
+- 💻 [Contribute on GitHub](https://github.com/anshumat-org-opensource/optifork/pulls)
+- 🪲 [Report Issues](https://github.com/anshumat-org-opensource/optifork/issues)
+- 🌐 [View All Contributors](https://github.com/anshumat-org-opensource/optifork/graphs/contributors)
+- 📖 [Read Contributing Guide](#🤝-contributing)
 
 ## License
 OptiFork was originally released under the MIT License.  
