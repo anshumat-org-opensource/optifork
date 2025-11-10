@@ -4,16 +4,14 @@
 
 OptiFork is a production-ready, self-hosted feature flag and A/B testing platform designed for modern applications. Built with FastAPI and React, it provides enterprise-grade capabilities with the flexibility of open source.
 
-[! [License]: OSI Approved](https://img.shields.io/badge/license-OSI--Approved-green.svg)
+
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![License: OSI Approved](https://img.shields.io/badge/license-OSI--Approved-green.svg)
+[![Open Source Love](https://badges.frapsoft.com/os/v3/open-source.svg?v=103)]
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-green.svg)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
-# OpenRole.org  
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![License: OSI Approved](https://img.shields.io/badge/license-OSI--Approved-green.svg)
-[![Open Source Love](https://badges.frapsoft.com/os/v3/open-source.svg?v=103)](https://github.com/AnshumatFoundation/OpenRole)
 
 
 ## ✨ Features
