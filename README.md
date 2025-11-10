@@ -463,8 +463,7 @@ See the [LICENSE](./LICENSE) file for the full text.
 [![Nonprofit Maintainer](https://img.shields.io/badge/Maintained_by-Anshumat_Foundation-green.svg)](#)
 [![GitHub Sponsors](https://img.shields.io/badge/Support-Open%20Source-orange.svg)](https://github.com/sponsors/anshumat-org-opensource)
 [![OSI Approved License](https://img.shields.io/badge/License-OSI--Approved-brightgreen.svg)](https://opensource.org/licenses)
-
-![Open Source Initiative Logo](https://opensource.org/files/osi_keyhole.svg)
+[![Open Source Initiative](https://i0.wp.com/opensource.org/wp-content/uploads/2023/03/cropped-OSI-horizontal-large.png?fit=640%2C229&quality=80&ssl=1)](https://opensource.org/)
 
 
 
