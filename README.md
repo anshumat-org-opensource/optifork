@@ -450,6 +450,9 @@ If you encounter issues not covered here:
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+[![Contributors](https://img.shields.io/github/contributors/anshumat-org-opensource/optifork.svg)](https://github.com/anshumat-org-opensource/optifork/graphs/contributors)
+
+
 ## License
 OptiFork was originally released under the MIT License.  
 As of **November 2025**, the project has been relicensed under the  
