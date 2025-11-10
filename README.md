@@ -463,10 +463,11 @@ See the [LICENSE](./LICENSE) file for the full text.
 
 [![Open Source Initiative](https://i0.wp.com/opensource.org/wp-content/uploads/2023/03/cropped-OSI-horizontal-large.png?fit=640%2C229&quality=80&ssl=1)](https://opensource.org/)
 
-[![OSI Approved](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Nonprofit Maintainer](https://img.shields.io/badge/Maintained_by-Anshumat_Foundation-green.svg)](#)
-[![GitHub Sponsors](https://img.shields.io/badge/Support-Open%20Source-orange.svg)](https://github.com/sponsors/anshumat-org-opensource)
 [![OSI Approved License](https://img.shields.io/badge/License-OSI--Approved-brightgreen.svg)](https://opensource.org/licenses)
+[![OSI Approved](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![GitHub Sponsors](https://img.shields.io/badge/Support-Open%20Source-orange.svg)](https://github.com/sponsors/anshumat-org-opensource)
+
+[![Nonprofit Maintainer](https://img.shields.io/badge/Maintained_by-Anshumat_Foundation-green.svg)](#)
 
 
 
