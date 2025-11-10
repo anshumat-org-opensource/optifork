@@ -464,7 +464,8 @@ See the [LICENSE](./LICENSE) file for the full text.
 
 [![GitHub Sponsors](https://img.shields.io/badge/Support-Open%20Source-orange.svg)](https://github.com/sponsors/anshumat-org-opensource)
 
-[![OSI Approved License](https://opensource.org/files/osi_keyhole_300X300_90ppi_0.png)](https://opensource.org/licenses)
+[![OSI Approved License](https://img.shields.io/badge/License-OSI--Approved-brightgreen.svg)](https://opensource.org/licenses)
+
 
 
 
