@@ -2,8 +2,6 @@
 **Open Source Feature Flag and A/B Testing Platform**
 OptiFork is a production-ready, self-hosted feature flag and A/B testing platform designed for modern applications. Built with FastAPI and React, it provides enterprise-grade capabilities with the flexibility of open source.
 
-![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/anshumat-org-opensource/optifork/pulls)
 ![GitHub Repo stars](https://img.shields.io/github/stars/anshumat-org-opensource/optifork?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/anshumat-org-opensource/optifork?style=social)
 ![Contributors](https://img.shields.io/github/contributors/anshumat-org-opensource/optifork)
