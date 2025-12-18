@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import FlagSegments from "./FlagSegments";
 
 interface Rule {
   field: string;
@@ -155,9 +156,14 @@ function ListFlags() {
             />
           </div>
 
+          {/* Segment Management */}
+          <div>
+            <FlagSegments flagId={editingFlag.id} flagName={editingFlag.name} />
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">Targeting Rules</label>
+              <label className="block text-sm font-medium text-gray-700">Legacy Targeting Rules</label>
               <button
                 onClick={addRule}
                 className="px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -165,6 +171,9 @@ function ListFlags() {
                 + Add Rule
               </button>
             </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Legacy rules are only used when no segments match. Consider using segments for better targeting.
+            </p>
             
             <div className="space-y-3">
               {editingFlag.rules.map((rule, index) => (

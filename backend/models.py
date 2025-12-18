@@ -10,6 +10,7 @@ class FeatureFlag(Base):
     description = Column(String)
     rollout = Column(Float)
     rules = relationship("Rule", back_populates="flag", cascade="all, delete-orphan")
+    flag_segments = relationship("FlagSegment", back_populates="flag", cascade="all, delete-orphan")
 
 class Rule(Base):
     __tablename__ = "rules"
@@ -22,6 +23,61 @@ class Rule(Base):
     flag_id = Column(Integer, ForeignKey("feature_flags.id"))
     flag = relationship("FeatureFlag", back_populates="rules")
 
+class UserSegment(Base):
+    __tablename__ = "user_segments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    description = Column(String)
+    conditions = Column(JSON)  # Array of condition objects
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    flag_segments = relationship("FlagSegment", back_populates="segment", cascade="all, delete-orphan")
+
+class FlagSegment(Base):
+    __tablename__ = "flag_segments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    flag_id = Column(Integer, ForeignKey("feature_flags.id"))
+    segment_id = Column(Integer, ForeignKey("user_segments.id"))
+    enabled = Column(Boolean, default=True)
+    rollout_percentage = Column(Float, default=100.0)  # Override rollout for this segment
+    priority = Column(Integer, default=0)  # Higher priority segments evaluated first
+    
+    # Relationships
+    flag = relationship("FeatureFlag", back_populates="flag_segments")
+    segment = relationship("UserSegment", back_populates="flag_segments")
+
+class RemoteConfig(Base):
+    __tablename__ = "remote_configs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, index=True)
+    description = Column(String)
+    value_type = Column(String)  # "string", "number", "boolean", "json"
+    default_value = Column(Text)  # Always stored as text, parsed based on value_type
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    config_segments = relationship("ConfigSegment", back_populates="config", cascade="all, delete-orphan")
+
+class ConfigSegment(Base):
+    __tablename__ = "config_segments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    config_id = Column(Integer, ForeignKey("remote_configs.id"))
+    segment_id = Column(Integer, ForeignKey("user_segments.id"))
+    value = Column(Text)  # Segment-specific value override
+    enabled = Column(Boolean, default=True)
+    priority = Column(Integer, default=0)  # Higher priority segments evaluated first
+    
+    # Relationships
+    config = relationship("RemoteConfig", back_populates="config_segments")
+    segment = relationship("UserSegment")
+
 class FlagExposure(Base):
     __tablename__ = "flag_exposures"
 
@@ -30,9 +86,25 @@ class FlagExposure(Base):
     flag_name = Column(String, index=True)
     user_id = Column(String, index=True)
     enabled = Column(String)  # "true" or "false"
+    segment_id = Column(Integer, ForeignKey("user_segments.id"), nullable=True)  # Track which segment matched
     timestamp = Column(DateTime, server_default=func.now())
     
     flag = relationship("FeatureFlag")
+    segment = relationship("UserSegment")
+
+class ConfigExposure(Base):
+    __tablename__ = "config_exposures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    config_id = Column(Integer, ForeignKey("remote_configs.id"))
+    config_key = Column(String, index=True)
+    user_id = Column(String, index=True)
+    value = Column(Text)  # The actual value returned
+    segment_id = Column(Integer, ForeignKey("user_segments.id"), nullable=True)  # Track which segment matched
+    timestamp = Column(DateTime, server_default=func.now())
+    
+    config = relationship("RemoteConfig")
+    segment = relationship("UserSegment")
 
 class SnowflakeConfig(Base):
     __tablename__ = "snowflake_configs"

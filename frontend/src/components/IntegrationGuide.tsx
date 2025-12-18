@@ -166,6 +166,172 @@ function CheckoutButton({ userId }) {
     </button>
   );
 }`
+      },
+      {
+        title: "Remote Config Manager",
+        description: "Manage remote configurations with caching",
+        code: `class ConfigManager {
+  constructor(baseUrl = 'http://localhost:8000') {
+    this.baseUrl = baseUrl;
+    this.configs = new Map();
+    this.cacheTTL = 5 * 60 * 1000; // 5 minutes
+  }
+
+  async fetchConfigs() {
+    const response = await fetch(\`\${this.baseUrl}/configs\`);
+    const configs = await response.json();
+    
+    configs.forEach(config => {
+      this.configs.set(config.name, {
+        ...config,
+        cached_at: Date.now()
+      });
+    });
+    return configs;
+  }
+
+  async getConfig(name, defaultValue = null) {
+    const cached = this.configs.get(name);
+    
+    // Check cache validity
+    if (cached && (Date.now() - cached.cached_at) < this.cacheTTL) {
+      return cached.config_data;
+    }
+    
+    await this.fetchConfigs();
+    const config = this.configs.get(name);
+    return config ? config.config_data : defaultValue;
+  }
+
+  async isFeatureEnabled(featureName) {
+    const featureFlags = await this.getConfig('feature_flags', {});
+    return featureFlags[featureName] || false;
+  }
+}
+
+// React Hook for Remote Configs
+function useRemoteConfig(configName, defaultValue = null) {
+  const [config, setConfig] = useState(defaultValue);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const response = await fetch('http://localhost:8000/configs');
+        const configs = await response.json();
+        
+        const targetConfig = configs.find(c => c.name === configName);
+        setConfig(targetConfig ? targetConfig.config_data : defaultValue);
+      } catch (error) {
+        console.error('Config fetch failed:', error);
+        setConfig(defaultValue);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchConfig();
+  }, [configName, defaultValue]);
+
+  return { config, loading };
+}
+
+// Usage
+const configManager = new ConfigManager();
+
+// Component using remote config
+function Dashboard() {
+  const { config: themeConfig } = useRemoteConfig('app_theme');
+  const { config: features } = useRemoteConfig('feature_flags');
+
+  return (
+    <div style={{ color: themeConfig?.primary_color }}>
+      {features?.enable_new_dashboard ? (
+        <NewDashboard />
+      ) : (
+        <LegacyDashboard />
+      )}
+    </div>
+  );
+}`
+      },
+      {
+        title: "User Segments Manager",
+        description: "Segment-based configuration targeting",
+        code: `class UserSegmentManager {
+  constructor(configManager) {
+    this.configManager = configManager;
+    this.userContext = {};
+    this.segments = [];
+  }
+
+  setUserContext(context) {
+    this.userContext = { ...context };
+    this.evaluateSegments();
+  }
+
+  async fetchSegments() {
+    const response = await fetch(\`\${this.configManager.baseUrl}/segments\`);
+    this.segments = await response.json();
+    this.evaluateSegments();
+  }
+
+  evaluateSegments() {
+    return this.segments.filter(segment => {
+      return this.matchesCriteria(this.userContext, segment.criteria);
+    });
+  }
+
+  matchesCriteria(userContext, criteria) {
+    return Object.entries(criteria).every(([key, value]) => {
+      const userValue = userContext[key];
+      
+      if (Array.isArray(value)) {
+        return value.includes(userValue);
+      }
+      
+      if (typeof value === 'number') {
+        return userValue >= value;
+      }
+      
+      return userValue === value;
+    });
+  }
+
+  async getSegmentedConfig(configName, defaultValue = null) {
+    const userSegments = this.evaluateSegments();
+    
+    // Try segment-specific configs first
+    for (const segment of userSegments) {
+      const segmentConfigName = \`\${configName}_\${segment.name}\`;
+      const segmentConfig = await this.configManager.getConfig(segmentConfigName);
+      if (segmentConfig) {
+        return segmentConfig;
+      }
+    }
+    
+    // Fallback to general config
+    return await this.configManager.getConfig(configName, defaultValue);
+  }
+}
+
+// Usage
+const configManager = new ConfigManager();
+const segmentManager = new UserSegmentManager(configManager);
+
+// Set user context
+segmentManager.setUserContext({
+  country: 'US',
+  subscription_tier: 'premium',
+  account_age_days: 45
+});
+
+// Get segmented configuration
+async function getUserExperience() {
+  const features = await segmentManager.getSegmentedConfig('feature_flags');
+  const theme = await segmentManager.getSegmentedConfig('app_theme');
+  
+  return { features, theme };
+}`
       }
     ]
   },
@@ -328,6 +494,235 @@ def feature_flag_required(flag_name):
 @feature_flag_required('new_dashboard')
 def new_dashboard_view(request):
     return render(request, 'new_dashboard.html')`
+      },
+      {
+        title: "Remote Config Client",
+        description: "Python client for remote configurations",
+        code: `import requests
+import httpx
+from typing import Dict, Any, Optional
+from datetime import datetime, timedelta
+
+class OptiForkClient:
+    def __init__(self, base_url: str = "http://localhost:8000"):
+        self.base_url = base_url.rstrip('/')
+        self.client = httpx.AsyncClient()
+        self.config_cache = {}
+        self.cache_ttl = timedelta(minutes=5)
+    
+    async def get_config(self, config_name: str, default_value: Any = None) -> Optional[Dict[str, Any]]:
+        """Get remote configuration with caching."""
+        # Check cache
+        if config_name in self.config_cache:
+            cached_data, timestamp = self.config_cache[config_name]
+            if datetime.now() - timestamp < self.cache_ttl:
+                return cached_data
+        
+        try:
+            response = await self.client.get(f"{self.base_url}/configs")
+            response.raise_for_status()
+            configs = response.json()
+            
+            for config in configs:
+                if config["name"] == config_name:
+                    config_data = config["config_data"]
+                    # Cache the result
+                    self.config_cache[config_name] = (config_data, datetime.now())
+                    return config_data
+            
+            return default_value
+        except Exception as e:
+            print(f"Failed to fetch config {config_name}: {e}")
+            return default_value
+    
+    async def get_all_configs(self) -> Dict[str, Any]:
+        """Get all configurations."""
+        try:
+            response = await self.client.get(f"{self.base_url}/configs")
+            response.raise_for_status()
+            configs = response.json()
+            
+            result = {}
+            for config in configs:
+                result[config["name"]] = config["config_data"]
+                # Cache individual configs
+                self.config_cache[config["name"]] = (config["config_data"], datetime.now())
+            
+            return result
+        except Exception as e:
+            print(f"Failed to fetch configs: {e}")
+            return {}
+    
+    async def create_config(self, name: str, config_data: Dict[str, Any], 
+                          description: str = "", environment: str = "production"):
+        """Create a new remote configuration."""
+        payload = {
+            "name": name,
+            "description": description,
+            "config_data": config_data,
+            "environment": environment,
+            "is_active": True
+        }
+        
+        response = await self.client.post(f"{self.base_url}/configs", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+# Usage Examples
+async def main():
+    client = OptiForkClient('http://localhost:8000')
+    
+    # Get theme configuration
+    theme_config = await client.get_config('app_theme', {
+        'primary_color': '#007bff',
+        'dark_mode': False
+    })
+    
+    # Get feature flags
+    feature_flags = await client.get_config('feature_flags', {})
+    
+    # Check if feature is enabled
+    new_dashboard_enabled = feature_flags.get('enable_new_dashboard', False)
+    
+    if new_dashboard_enabled:
+        print("Using new dashboard")
+    else:
+        print("Using legacy dashboard")`
+      },
+      {
+        title: "User Segments Client",
+        description: "Python implementation for user segmentation",
+        code: `import requests
+import httpx
+from typing import Dict, Any, List, Optional
+
+class UserSegmentManager:
+    def __init__(self, base_url: str = "http://localhost:8000"):
+        self.base_url = base_url.rstrip('/')
+        self.client = httpx.AsyncClient()
+        self.segments_cache = None
+        self.cache_timestamp = None
+        self.cache_ttl_minutes = 10
+    
+    async def fetch_segments(self, force_refresh: bool = False) -> List[Dict]:
+        """Fetch user segments with caching."""
+        if not force_refresh and self.segments_cache is not None:
+            # Check if cache is still valid
+            if self.cache_timestamp and \
+               (datetime.now() - self.cache_timestamp).total_seconds() < self.cache_ttl_minutes * 60:
+                return self.segments_cache
+        
+        try:
+            response = await self.client.get(f"{self.base_url}/segments")
+            response.raise_for_status()
+            self.segments_cache = response.json()
+            self.cache_timestamp = datetime.now()
+            return self.segments_cache
+        except Exception as e:
+            print(f"Failed to fetch segments: {e}")
+            return []
+    
+    def matches_criteria(self, user_context: Dict[str, Any], criteria: Dict[str, Any]) -> bool:
+        """Check if user context matches segment criteria."""
+        for key, expected_value in criteria.items():
+            user_value = user_context.get(key)
+            
+            if isinstance(expected_value, list):
+                if user_value not in expected_value:
+                    return False
+            elif isinstance(expected_value, (int, float)):
+                if not isinstance(user_value, (int, float)) or user_value < expected_value:
+                    return False
+            else:
+                if user_value != expected_value:
+                    return False
+        
+        return True
+    
+    async def get_user_segments(self, user_context: Dict[str, Any]) -> List[str]:
+        """Get segment names that match the user context."""
+        segments = await self.fetch_segments()
+        matching_segments = []
+        
+        for segment in segments:
+            if segment.get('is_active', True) and \
+               self.matches_criteria(user_context, segment.get('criteria', {})):
+                matching_segments.append(segment['name'])
+        
+        return matching_segments
+    
+    async def create_segment(self, name: str, criteria: Dict[str, Any], 
+                           description: str = "", is_active: bool = True):
+        """Create a new user segment."""
+        payload = {
+            "name": name,
+            "description": description,
+            "criteria": criteria,
+            "is_active": is_active
+        }
+        
+        response = await self.client.post(f"{self.base_url}/segments", json=payload)
+        response.raise_for_status()
+        
+        # Invalidate cache
+        self.segments_cache = None
+        return response.json()
+
+# Combined usage with configs
+class SegmentedConfigManager:
+    def __init__(self, config_client: OptiForkClient, segment_manager: UserSegmentManager):
+        self.config_client = config_client
+        self.segment_manager = segment_manager
+    
+    async def get_segmented_config(self, config_name: str, user_context: Dict[str, Any], 
+                                  default_value: Any = None) -> Any:
+        """Get configuration based on user segments."""
+        # Get user segments
+        user_segments = await self.segment_manager.get_user_segments(user_context)
+        
+        # Try segment-specific configs first (most specific wins)
+        for segment in user_segments:
+            segment_config_name = f"{config_name}_{segment}"
+            segment_config = await self.config_client.get_config(segment_config_name)
+            if segment_config is not None:
+                return segment_config
+        
+        # Fallback to general config
+        return await self.config_client.get_config(config_name, default_value)
+
+# Usage Example
+async def get_user_experience():
+    config_client = OptiForkClient('http://localhost:8000')
+    segment_manager = UserSegmentManager('http://localhost:8000')
+    segmented_config = SegmentedConfigManager(config_client, segment_manager)
+    
+    # User context
+    user_context = {
+        'country': 'US',
+        'subscription_tier': 'premium',
+        'account_age_days': 45,
+        'device': 'mobile'
+    }
+    
+    # Get segmented theme configuration
+    theme_config = await segmented_config.get_segmented_config(
+        'app_theme', 
+        user_context, 
+        {'primary_color': '#007bff'}
+    )
+    
+    # Get segmented feature flags
+    feature_flags = await segmented_config.get_segmented_config(
+        'feature_flags',
+        user_context,
+        {}
+    )
+    
+    return {
+        'theme': theme_config,
+        'features': feature_flags,
+        'user_segments': await segment_manager.get_user_segments(user_context)
+    }`
       }
     ]
   },
@@ -504,7 +899,9 @@ func main() {
       {
         title: "Basic API Calls",
         description: "Direct HTTP API usage examples",
-        code: `# Check a feature flag
+        code: `# === FEATURE FLAGS ===
+
+# Check a feature flag
 curl "http://localhost:8000/flags/new_checkout_flow?user_id=user123&country=US&plan=premium"
 
 # Response:
@@ -546,13 +943,82 @@ curl -X PUT "http://localhost:8000/flags/dark_mode" \\
     ]
   }'
 
-# Get flag exposures
-curl "http://localhost:8000/flags/dark_mode/exposures?limit=50"
+# === REMOTE CONFIGS ===
 
-# Get all exposures  
-curl "http://localhost:8000/exposures?limit=100"
+# Get all remote configs
+curl "http://localhost:8000/configs"
 
-# === EXPERIMENT APIs ===
+# Create a remote config
+curl -X POST "http://localhost:8000/configs" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "app_theme",
+    "description": "Application theme settings",
+    "config_data": {
+      "primary_color": "#007bff",
+      "dark_mode_enabled": true,
+      "sidebar_collapsed": false,
+      "max_items_per_page": 50
+    },
+    "environment": "production",
+    "is_active": true
+  }'
+
+# Get specific config
+curl "http://localhost:8000/configs/1"
+
+# Update config
+curl -X PUT "http://localhost:8000/configs/1" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "app_theme",
+    "description": "Updated theme settings",
+    "config_data": {
+      "primary_color": "#28a745",
+      "dark_mode_enabled": false,
+      "sidebar_collapsed": true,
+      "max_items_per_page": 100
+    },
+    "environment": "production",
+    "is_active": true
+  }'
+
+# === USER SEGMENTS ===
+
+# Get all user segments
+curl "http://localhost:8000/segments"
+
+# Create a user segment
+curl -X POST "http://localhost:8000/segments" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "premium_users",
+    "description": "Premium subscription users",
+    "criteria": {
+      "subscription_tier": "premium",
+      "account_age_days": 30,
+      "monthly_usage_gb": 100
+    },
+    "is_active": true
+  }'
+
+# Create geographic segment
+curl -X POST "http://localhost:8000/segments" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "us_users",
+    "description": "Users located in United States",
+    "criteria": {
+      "country": "US",
+      "timezone": ["EST", "CST", "MST", "PST"]
+    },
+    "is_active": true
+  }'
+
+# Get specific segment
+curl "http://localhost:8000/segments/1"
+
+# === EXPERIMENTS ===
 
 # Assign user to experiment variant
 curl "http://localhost:8000/experiments/homepage_redesign/assign?user_id=user123&country=US&plan=premium"
@@ -581,15 +1047,11 @@ curl -X POST "http://localhost:8000/experiments" \\
 # Get all experiments
 curl "http://localhost:8000/experiments"
 
-# JSON Attributes Example
-curl "http://localhost:8000/experiments/checkout_test/assign" \\
-  -G \\
-  -d user_id=user456 \\
-  -d country=CA \\
-  -d age=28 \\
-  -d plan=premium \\
-  -d device=mobile \\
-  -d returning_user=true`
+# Get flag exposures
+curl "http://localhost:8000/flags/dark_mode/exposures?limit=50"
+
+# Get all exposures  
+curl "http://localhost:8000/exposures?limit=100"`
       }
     ]
   }
@@ -640,7 +1102,7 @@ function IntegrationGuide() {
         {/* API Endpoint Info */}
         <div className="bg-gray-50 border border-gray-200 p-4 mb-6">
           <h3 className="font-medium text-gray-800 mb-3">API Endpoints</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
             <div className="space-y-2">
               <h4 className="font-medium text-gray-700 mb-2">Feature Flags</h4>
               <div className="font-mono bg-gray-100 px-3 py-2">
@@ -666,12 +1128,42 @@ function IntegrationGuide() {
                 {`{ "experiment": "...", "user_id": "...", "variant": "control" }`}
               </div>
             </div>
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-700 mb-2">Remote Configs</h4>
+              <div className="font-mono bg-gray-100 px-3 py-2">
+                <strong>Get All:</strong><br/>
+                GET /configs
+              </div>
+              <div className="font-mono bg-gray-100 px-3 py-2">
+                <strong>Create:</strong><br/>
+                POST /configs
+              </div>
+              <div className="font-mono bg-gray-100 px-3 py-2 text-xs">
+                <strong>Response:</strong><br/>
+                {`{ "name": "...", "config_data": {...}, "is_active": true }`}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-700 mb-2">User Segments</h4>
+              <div className="font-mono bg-gray-100 px-3 py-2">
+                <strong>Get All:</strong><br/>
+                GET /segments
+              </div>
+              <div className="font-mono bg-gray-100 px-3 py-2">
+                <strong>Create:</strong><br/>
+                POST /segments
+              </div>
+              <div className="font-mono bg-gray-100 px-3 py-2 text-xs">
+                <strong>Response:</strong><br/>
+                {`{ "name": "...", "criteria": {...}, "is_active": true }`}
+              </div>
+            </div>
           </div>
           
           <div className="mt-4 p-3 bg-gray-50 border border-gray-200">
             <p className="text-gray-700 text-sm">
-              <strong>Tip:</strong> Pass user attributes as JSON in your application, then convert to URL parameters for API calls. 
-              Both feature flags and experiments support the same attribute format.
+              <strong>Tip:</strong> Use remote configs for dynamic application settings, user segments for targeted experiences, 
+              and feature flags combined with experiments for A/B testing. All endpoints support caching for better performance.
             </p>
           </div>
         </div>
