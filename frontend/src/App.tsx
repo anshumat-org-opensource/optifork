@@ -17,6 +17,8 @@ import CreateAIExperiment from "./components/CreateAIExperiment";
 import ListAIExperiments from "./components/ListAIExperiments";
 import AIExperimentDetails from "./components/AIExperimentDetails";
 import Debug from "./components/Debug";
+import UserSegments from "./components/UserSegments";
+import RemoteConfigs from "./components/RemoteConfigs";
 
 interface User {
   id: string;
@@ -50,7 +52,7 @@ interface User {
   };
 }
 
-type MainTab = "flags" | "experiments" | "ai-experiments" | "integration" | "exports" | "users" | "debug";
+type MainTab = "flags" | "segments" | "configs" | "experiments" | "ai-experiments" | "integration" | "exports" | "users" | "debug";
 type FlagSubTab = "manage" | "test" | "exposures";
 type ExperimentSubTab = "manage" | "assign" | "results";
 type AIExperimentSubTab = "manage" | "evaluate" | "results";
@@ -248,6 +250,34 @@ export default function App() {
                 </div>
               )}
             </div>
+          )}
+
+          {canViewSection('feature_flags') && (
+            <button
+              onClick={() => setActiveTab("segments")}
+              className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === "segments"
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <span className="text-base">👥</span>
+              {!isCollapsed && <span className="ml-3">User Segments</span>}
+            </button>
+          )}
+
+          {canViewSection('feature_flags') && (
+            <button
+              onClick={() => setActiveTab("configs")}
+              className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === "configs"
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <span className="text-base">⚙️</span>
+              {!isCollapsed && <span className="ml-3">Remote Configs</span>}
+            </button>
           )}
           
           {canViewSection('experiments') && (
@@ -453,6 +483,20 @@ export default function App() {
                 </ProtectedRoute>
               )}
             </div>
+          )}
+
+          {/* User Segments Section */}
+          {activeTab === "segments" && (
+            <ProtectedRoute user={user} section="feature_flags" permission="view">
+              <UserSegments />
+            </ProtectedRoute>
+          )}
+
+          {/* Remote Configs Section */}
+          {activeTab === "configs" && (
+            <ProtectedRoute user={user} section="feature_flags" permission="view">
+              <RemoteConfigs />
+            </ProtectedRoute>
           )}
 
           {/* Experiments Section */}

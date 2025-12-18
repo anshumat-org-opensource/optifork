@@ -284,7 +284,257 @@ For detailed deployment guide, see [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ## 🔌 Integration Examples
 
-### JavaScript/React
+### Remote Configs Integration
+
+Remote configs allow dynamic application control without code deployments.
+
+#### Creating Remote Configs
+```bash
+# Theme Configuration
+curl -X POST http://localhost:8000/configs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "app_theme",
+    "description": "Application theme settings",
+    "config_data": {
+      "primary_color": "#007bff",
+      "dark_mode_enabled": true,
+      "sidebar_collapsed": false
+    },
+    "environment": "production",
+    "is_active": true
+  }'
+
+# Feature Flags Config
+curl -X POST http://localhost:8000/configs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "feature_flags",
+    "description": "Feature toggle configuration", 
+    "config_data": {
+      "enable_new_dashboard": true,
+      "enable_payment_v2": false,
+      "max_upload_size": 10485760
+    },
+    "environment": "production"
+  }'
+```
+
+#### JavaScript/React Integration
+```javascript
+class ConfigManager {
+  constructor(baseUrl = 'http://localhost:8000') {
+    this.baseUrl = baseUrl;
+    this.configs = new Map();
+    this.cacheTTL = 5 * 60 * 1000; // 5 minutes
+  }
+
+  async fetchConfigs() {
+    const response = await fetch(`${this.baseUrl}/configs`);
+    const configs = await response.json();
+    
+    configs.forEach(config => {
+      this.configs.set(config.name, {
+        ...config,
+        cached_at: Date.now()
+      });
+    });
+    return configs;
+  }
+
+  async getConfig(name, defaultValue = null) {
+    const cached = this.configs.get(name);
+    
+    // Check cache validity
+    if (cached && (Date.now() - cached.cached_at) < this.cacheTTL) {
+      return cached.config_data;
+    }
+    
+    await this.fetchConfigs();
+    const config = this.configs.get(name);
+    return config ? config.config_data : defaultValue;
+  }
+
+  async isFeatureEnabled(featureName) {
+    const featureFlags = await this.getConfig('feature_flags', {});
+    return featureFlags[featureName] || false;
+  }
+}
+
+// Usage
+const configManager = new ConfigManager();
+
+// Feature flag usage
+if (await configManager.isFeatureEnabled('enable_new_dashboard')) {
+  renderNewDashboard();
+} else {
+  renderLegacyDashboard();
+}
+
+// Theme application
+const themeConfig = await configManager.getConfig('app_theme');
+if (themeConfig?.dark_mode_enabled) {
+  document.body.classList.add('dark-theme');
+}
+```
+
+#### React Hook for Remote Configs
+```javascript
+import { useState, useEffect } from 'react';
+
+export function useRemoteConfig(configName, defaultValue = null) {
+  const [config, setConfig] = useState(defaultValue);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const response = await fetch('http://localhost:8000/configs');
+        const configs = await response.json();
+        
+        const targetConfig = configs.find(c => c.name === configName);
+        setConfig(targetConfig ? targetConfig.config_data : defaultValue);
+      } catch (error) {
+        console.error('Config fetch failed:', error);
+        setConfig(defaultValue);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchConfig();
+  }, [configName, defaultValue]);
+
+  return { config, loading };
+}
+
+// Component usage
+function Dashboard() {
+  const { config: themeConfig } = useRemoteConfig('app_theme');
+  const { config: features } = useRemoteConfig('feature_flags');
+
+  return (
+    <div style={{ color: themeConfig?.primary_color }}>
+      {features?.enable_new_dashboard ? (
+        <NewDashboard />
+      ) : (
+        <LegacyDashboard />
+      )}
+    </div>
+  );
+}
+```
+
+### User Segments Integration
+
+User segments enable targeted feature rollouts and A/B testing.
+
+#### Creating User Segments
+```bash
+# Geographic Segment
+curl -X POST http://localhost:8000/segments \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "us_users",
+    "description": "Users located in United States",
+    "criteria": {
+      "country": "US",
+      "timezone": ["EST", "CST", "MST", "PST"]
+    },
+    "is_active": true
+  }'
+
+# Premium Users Segment
+curl -X POST http://localhost:8000/segments \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "premium_users", 
+    "description": "Premium subscription users",
+    "criteria": {
+      "subscription_tier": "premium",
+      "account_age_days": 30
+    },
+    "is_active": true
+  }'
+```
+
+#### JavaScript User Segment Manager
+```javascript
+class UserSegmentManager {
+  constructor(configManager) {
+    this.configManager = configManager;
+    this.userContext = {};
+    this.segments = [];
+  }
+
+  setUserContext(context) {
+    this.userContext = { ...context };
+    this.evaluateSegments();
+  }
+
+  async fetchSegments() {
+    const response = await fetch(`${this.configManager.baseUrl}/segments`);
+    this.segments = await response.json();
+    this.evaluateSegments();
+  }
+
+  evaluateSegments() {
+    return this.segments.filter(segment => {
+      return this.matchesCriteria(this.userContext, segment.criteria);
+    });
+  }
+
+  matchesCriteria(userContext, criteria) {
+    return Object.entries(criteria).every(([key, value]) => {
+      const userValue = userContext[key];
+      
+      if (Array.isArray(value)) {
+        return value.includes(userValue);
+      }
+      
+      if (typeof value === 'number') {
+        return userValue >= value;
+      }
+      
+      return userValue === value;
+    });
+  }
+
+  async getSegmentedConfig(configName, defaultValue = null) {
+    const userSegments = this.evaluateSegments();
+    
+    // Try segment-specific configs first
+    for (const segment of userSegments) {
+      const segmentConfigName = `${configName}_${segment.name}`;
+      const segmentConfig = await this.configManager.getConfig(segmentConfigName);
+      if (segmentConfig) {
+        return segmentConfig;
+      }
+    }
+    
+    // Fallback to general config
+    return await this.configManager.getConfig(configName, defaultValue);
+  }
+}
+
+// Usage
+const configManager = new ConfigManager();
+const segmentManager = new UserSegmentManager(configManager);
+
+// Set user context
+segmentManager.setUserContext({
+  country: 'US',
+  subscription_tier: 'premium',
+  account_age_days: 45
+});
+
+// Get segmented configuration
+const features = await segmentManager.getSegmentedConfig('feature_flags');
+const premiumTheme = await segmentManager.getSegmentedConfig('app_theme');
+```
+
+### Feature Flags Integration
+
+#### JavaScript/React
 ```javascript
 const isEnabled = await checkFeatureFlag(
   'new_checkout', 
@@ -293,15 +543,110 @@ const isEnabled = await checkFeatureFlag(
 );
 ```
 
-### Python
+#### Python
 ```python
+import httpx
+
+class OptiForkClient:
+    def __init__(self, base_url="http://localhost:8000"):
+        self.base_url = base_url
+        self.client = httpx.AsyncClient()
+    
+    async def get_config(self, config_name):
+        response = await self.client.get(f"{self.base_url}/configs")
+        configs = response.json()
+        
+        for config in configs:
+            if config["name"] == config_name:
+                return config["config_data"]
+        return None
+    
+    async def check_flag(self, flag_name, user_id, context=None):
+        params = {"user_id": user_id}
+        if context:
+            params.update(context)
+        
+        response = await self.client.get(
+            f"{self.base_url}/flags/{flag_name}", 
+            params=params
+        )
+        return response.json()
+
+# Usage
 client = OptiForkClient('http://localhost:8000')
-enabled = client.check_flag('new_feature', 'user123')
+enabled = await client.check_flag('new_feature', 'user123')
+config = await client.get_config('app_theme')
 ```
 
-### cURL
+#### cURL Examples
 ```bash
+# Check feature flag
 curl "http://localhost:8000/flags/new_feature?user_id=user123&country=US"
+
+# Get all configs
+curl "http://localhost:8000/configs"
+
+# Get specific config
+curl "http://localhost:8000/configs/1"
+
+# Get all segments  
+curl "http://localhost:8000/segments"
+
+# Create feature flag with segments
+curl -X POST http://localhost:8000/flags \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "beta_feature",
+    "description": "New beta feature for premium users",
+    "is_enabled": true,
+    "rollout_percentage": 50,
+    "targeting_rules": {
+      "segments": ["premium_users", "beta_testers"]
+    }
+  }'
+```
+
+### Best Practices
+
+#### 1. Configuration Caching
+```javascript
+// Cache configs with TTL to reduce API calls
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const configCache = new Map();
+
+function getCachedConfig(name) {
+  const cached = configCache.get(name);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+```
+
+#### 2. Error Handling & Fallbacks
+```javascript
+async function safeGetConfig(name, defaultValue) {
+  try {
+    const config = await getConfig(name);
+    return config || defaultValue;
+  } catch (error) {
+    console.error(`Config ${name} fetch failed:`, error);
+    return defaultValue;
+  }
+}
+```
+
+#### 3. Real-time Updates
+```javascript
+// WebSocket connection for real-time config updates
+const ws = new WebSocket('ws://localhost:8000/ws/configs');
+ws.onmessage = (event) => {
+  const update = JSON.parse(event.data);
+  if (update.type === 'config_updated') {
+    configCache.delete(update.config_name);
+    // Refresh UI if needed
+  }
+};
 ```
 
 ## 📊 API Endpoints
