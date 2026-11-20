@@ -25,14 +25,14 @@ Tracks execution of `goal.md`. Updated as each step completes.
 ## Next (after review approval)
 
 - **Phase 1** — build the scale harness *before* touching any feature:
-  - Seed script → fresh DB at production scale (10K flags, 5K experiments/rollouts, 1K segments, 100K audit records*, 1M+ distinct user IDs of exposure data).
+  - Seed script → fresh DB at production scale (10K flags, 5K experiments/rollouts, 1K segments, 1M+ distinct user IDs of exposure data). The 100K audit-record target is **N/A** — no audit feature exists and none is being built (see open questions).
   - Load tests (k6 or Locust) against the Docker **prod** build.
   - Frontend benchmark harness (Playwright + Lighthouse/web-vitals, 4× CPU throttle).
   - `make scale-test` → seed + run all benchmarks + write baseline `SCALE_REPORT.md`.
 
 ## Open questions / flags raised in Phase 0
 
-- `*` **Audit/change-history — RESOLVED (Phase 0 review, 2026-11-21): approved as in-scope.** OptiFork had no audit feature; a minimal change-history table + write-path is an approved scope exception so the Phase 1 seed target is real. See `FEATURES.md` → "Approved scope exceptions". This is the one sanctioned deviation from frozen scope.
+- `*` **Audit/change-history — RESOLVED (Phase 0 review, 2026-11-21): kept out of scope, NOT built.** OptiFork has no audit feature and none will be added. The Phase 1 "100,000 audit/change-history records" seed target has no feature to seed against → recorded **N/A** in `SCALE_REPORT.md`. Scope stays fully frozen (no exceptions). See `FEATURES.md` → "Gaps — not built".
 - Several production subsystems exist in the repo but are **commented out** in `main.py` (rate limiting, monitoring/metrics, Redis cache, backup/restore, background scheduler). They are not active features today. See `FEATURES.md` → "Present in repo but disabled".
 
 ## Ground rules being followed
