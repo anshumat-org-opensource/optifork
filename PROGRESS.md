@@ -4,16 +4,18 @@ Tracks execution of `goal.md`. Updated as each step completes.
 
 ## Current phase
 
-**Phase 1 — Scale harness.** Phase 0 approved. Building the harness before touching any
-feature. Seed script done; load tests / frontend benchmarks / `make scale-test` next.
+**Phase 1 — Scale harness: COMPLETE** (smoke baseline committed). `make scale-test` runs
+end-to-end from a fresh clone and writes `SCALE_REPORT.md` with honest pass/fail. Ready for
+Phase 2 pending go-ahead. The production-scale baseline (`make scale-test SCALE=full`) has
+not been run yet (deferred by request); the committed report is the **smoke** run.
 
 ## Phase status
 
 | Phase | State | Notes |
 |---|---|---|
 | 0 — Inventory | ✅ Done, reviewed & approved | `FEATURES.md` + `ARCHITECTURE.md` committed. Audit kept out of scope. |
-| 1 — Scale harness | 🔶 In progress | Seed script done. Load tests / FE benchmarks / `make scale-test` pending. |
-| 2 — Backend scale targets & fixes | ⏳ Not started | Blocked by Phase 1. |
+| 1 — Scale harness | ✅ Done (smoke baseline) | Seed + Locust + FE bench + `make scale-test` + `SCALE_REPORT.md`. Full-scale run deferred. |
+| 2 — Backend scale targets & fixes | ⏳ Ready to start | Phase 1 committed. Needs go-ahead. |
 | 3 — UI redesign | ⏳ Not started | Blocked by Phase 2. |
 
 ## Done
@@ -26,6 +28,8 @@ feature. Seed script done; load tests / frontend benchmarks / `make scale-test` 
   - Wrote `backend/seed_scale.py` — production-scale seeder (see "Phase 1 — remaining work").
   - Wrote `load_tests/locustfile.py` + requirements + README — Locust load tests.
   - Wrote `frontend_bench/` (bench.mjs + package.json + README) — Playwright/web-vitals harness.
+  - Wrote `docker-compose.scale.yml`, `Makefile`, `scripts/run_scale_test.sh`,
+    `scripts/gen_scale_report.py`; ran smoke `make scale-test`; committed baseline `SCALE_REPORT.md`.
 
 ## Phase 1 — remaining work
 
@@ -47,8 +51,23 @@ feature. Seed script done; load tests / frontend benchmarks / `make scale-test` 
   tab-based SPA by seeding an admin into localStorage and clicking the sidebar. Validated
   end-to-end (bundle 83.8 KB gzip; all tabs measured). Representative run needs the seeded
   dataset + built frontend (done in `make scale-test`).
-- [ ] **`make scale-test`** → seed + run all benchmarks + write baseline `SCALE_REPORT.md`
-  (target, measured, pass/fail, hardware). Must run from a fresh clone.
+- [x] **`make scale-test`** → `docker-compose.scale.yml` (prod backend image + Postgres) +
+  `scripts/run_scale_test.sh` (orchestrator) + `scripts/gen_scale_report.py` (report).
+  Seeds, runs Locust + FE bench, writes `SCALE_REPORT.md` (target/measured/pass-fail/hardware).
+  Smoke run executed end-to-end; baseline committed. `make scale-test SCALE=full` for the
+  production-scale run.
+
+### Phase 1 smoke-baseline headlines (honest failures)
+
+- **Flag eval p99 = ~270 ms @ ~610 req/s, 0 errors** → ❌ FAIL vs p99 < 20 ms (write-amplified:
+  INSERT+COMMIT per eval, single Uvicorn worker). Even at smoke scale.
+- **Backend went DOWN under mixed load** (connection-refused; log ends with no traceback →
+  SIGKILL/OOM-consistent). Caveat: no backend mem limit + co-tenant containers on the Docker
+  host; FlagEval alone survived. Root-cause = Phase 2 (profile, don't guess).
+- **No pagination / no search endpoint** → ❌ FAIL (static gaps).
+- Frontend bundle 88.9 KB gz; LCP/CLS fine — but **smoke data (50 flags)**, not representative;
+  real numbers need `SCALE=full`.
+- Debug `print()`s on the experiment hot path spam stdout (Phase 2 cleanup).
 
 ## Open questions / flags raised in Phase 0
 
