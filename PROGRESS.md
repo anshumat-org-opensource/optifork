@@ -25,6 +25,7 @@ feature. Seed script done; load tests / frontend benchmarks / `make scale-test` 
 - **Phase 1**
   - Wrote `backend/seed_scale.py` — production-scale seeder (see "Phase 1 — remaining work").
   - Wrote `load_tests/locustfile.py` + requirements + README — Locust load tests.
+  - Wrote `frontend_bench/` (bench.mjs + package.json + README) — Playwright/web-vitals harness.
 
 ## Phase 1 — remaining work
 
@@ -40,7 +41,12 @@ feature. Seed script done; load tests / frontend benchmarks / `make scale-test` 
   seeded entity names at startup; stable per-endpoint request grouping; headless CSV/HTML
   output. Validated end-to-end against a freshly-seeded backend (0% failures). Runs against
   the Postgres prod build in `make scale-test`.
-- [ ] **Frontend benchmark harness** (Playwright + Lighthouse/web-vitals, 4× CPU throttle).
+- [x] **Frontend benchmark harness** (`frontend_bench/`) — Playwright + injected web-vitals
+  (LCP/CLS/FCP/TTFB/INP) under 4× CPU throttle, scroll-jank estimate on the flag list
+  (fps/jank-frames for the 60fps bar), and gzipped bundle size (< 250 KB bar). Navigates the
+  tab-based SPA by seeding an admin into localStorage and clicking the sidebar. Validated
+  end-to-end (bundle 83.8 KB gzip; all tabs measured). Representative run needs the seeded
+  dataset + built frontend (done in `make scale-test`).
 - [ ] **`make scale-test`** → seed + run all benchmarks + write baseline `SCALE_REPORT.md`
   (target, measured, pass/fail, hardware). Must run from a fresh clone.
 

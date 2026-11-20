@@ -1,0 +1,13 @@
+{
+  "name": "optifork-frontend-bench",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playwright + web-vitals frontend benchmark harness for the OptiFork console (Phase 1 scale harness).",
+  "scripts": {
+    "bench": "node bench.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}
