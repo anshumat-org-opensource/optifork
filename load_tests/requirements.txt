@@ -1,0 +1,3 @@
+# Load-test harness dependencies (host-side; drives the Docker prod build).
+locust>=2.20,<3
+requests>=2.28

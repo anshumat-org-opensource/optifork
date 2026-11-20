@@ -24,6 +24,7 @@ feature. Seed script done; load tests / frontend benchmarks / `make scale-test` 
   - Extended `ARCHITECTURE.md` with the Phase 0 runtime analysis (flag decision path, config propagation, exposure recording, caching/pooling/workers/indexes).
 - **Phase 1**
   - Wrote `backend/seed_scale.py` — production-scale seeder (see "Phase 1 — remaining work").
+  - Wrote `load_tests/locustfile.py` + requirements + README — Locust load tests.
 
 ## Phase 1 — remaining work
 
@@ -34,7 +35,11 @@ feature. Seed script done; load tests / frontend benchmarks / `make scale-test` 
   and `smoke`; `--fresh` drops+recreates. Batched bulk inserts (~130K rows/s on SQLite).
   Validated at smoke + multi-batch scale on SQLite. **Full 1M run happens against Postgres
   in `make scale-test`.** 100K audit-record target = **N/A** (no audit feature).
-- [ ] **Load tests (Locust)** against the Docker **prod** build (Postgres), not dev.
+- [x] **Load tests (Locust)** — `load_tests/locustfile.py`: `FlagEvalUser` (p99/throughput
+  hot path), `ConfigEvalUser`, `ConsoleUser` (list/search-proxy), `MixedUser`. Fetches real
+  seeded entity names at startup; stable per-endpoint request grouping; headless CSV/HTML
+  output. Validated end-to-end against a freshly-seeded backend (0% failures). Runs against
+  the Postgres prod build in `make scale-test`.
 - [ ] **Frontend benchmark harness** (Playwright + Lighthouse/web-vitals, 4× CPU throttle).
 - [ ] **`make scale-test`** → seed + run all benchmarks + write baseline `SCALE_REPORT.md`
   (target, measured, pass/fail, hardware). Must run from a fresh clone.
@@ -42,6 +47,11 @@ feature. Seed script done; load tests / frontend benchmarks / `make scale-test` 
 ## Open questions / flags raised in Phase 0
 
 - `*` **Audit/change-history — RESOLVED (Phase 0 review, 2026-11-21): kept out of scope, NOT built.** OptiFork has no audit feature and none will be added. The Phase 1 "100,000 audit/change-history records" seed target has no feature to seed against → recorded **N/A** in `SCALE_REPORT.md`. Scope stays fully frozen (no exceptions). See `FEATURES.md` → "Gaps — not built".
+- **Dev DB schema drift (finding, Phase 1c).** `backend/data/optifork.db` lags the models —
+  `flag_exposures` lacks the `segment_id` column the model declares, so flag evaluation 500s
+  against that file. Cause: `create_all` + no migrations (consistent with the ARCHITECTURE
+  finding). Not a blocker for the harness (`make scale-test` seeds a **fresh** Postgres DB),
+  but flagged for Phase 2 (no migration path) and so nobody mistakes it for a load-test bug.
 - Several production subsystems exist in the repo but are **commented out** in `main.py` (rate limiting, monitoring/metrics, Redis cache, backup/restore, background scheduler). They are not active features today. See `FEATURES.md` → "Present in repo but disabled".
 
 ## Ground rules being followed
