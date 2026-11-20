@@ -271,8 +271,6 @@ Capabilities the scale/UI goals reference or imply that **do not exist today**. 
 of these is a new feature (frozen-scope rule) and must be parked, not built, unless the
 review explicitly approves it.
 
-- **Audit log / change history** — no table, endpoint, or UI. (Phase 1's "100,000 audit/
-  change-history records" seed target has no feature to seed against — needs a ruling.)
 - **Server-side pagination** on list endpoints — only `GET /ai-experiments/` has `skip/limit`.
   `/flags`, `/segments`, `/configs`, `/experiments/`, all `/exposures` return unbounded sets.
 - **Search / filter** endpoints — none (the UI fetches everything and renders client-side).
@@ -285,6 +283,17 @@ review explicitly approves it.
 - **AI experiment execution** — the offline evaluator is a stub (no model calls).
 - **Real scheduled exports** — scheduler module is disabled; the "scheduled export" endpoints
   return config echoes only.
+
+## Approved scope exceptions
+
+Additions explicitly approved at the Phase 0 review, overriding the frozen-scope rule for
+the named item only. Everything else stays frozen.
+
+- **Audit log / change history** — *approved as in-scope (Phase 0 review, 2026-11-21).*
+  OptiFork had no audit feature today (no table, endpoint, or UI). A minimal change-history
+  table + write-path is approved so Phase 1's "100,000 audit/change-history records" target
+  has a real feature to seed and scale-test against. Scope is the change history itself; no
+  broader auth/identity work is implied (writers are unauthenticated today — see Feature 8).
 
 ## UI ideas — not built
 

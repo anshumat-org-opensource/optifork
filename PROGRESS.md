@@ -32,7 +32,7 @@ Tracks execution of `goal.md`. Updated as each step completes.
 
 ## Open questions / flags raised in Phase 0
 
-- `*` **Audit/change-history records (Phase 1 seed target): there is no audit/change-history feature today** — no table, no endpoint, no UI. Per the frozen-scope rule, building one would be a new feature. Needs a ruling at the Phase 0 review: seed against a feature that doesn't exist (can't), or record it under "Gaps — not built" and skip that seed target. See `FEATURES.md` → "Gaps — not built".
+- `*` **Audit/change-history — RESOLVED (Phase 0 review, 2026-11-21): approved as in-scope.** OptiFork had no audit feature; a minimal change-history table + write-path is an approved scope exception so the Phase 1 seed target is real. See `FEATURES.md` → "Approved scope exceptions". This is the one sanctioned deviation from frozen scope.
 - Several production subsystems exist in the repo but are **commented out** in `main.py` (rate limiting, monitoring/metrics, Redis cache, backup/restore, background scheduler). They are not active features today. See `FEATURES.md` → "Present in repo but disabled".
 
 ## Ground rules being followed
