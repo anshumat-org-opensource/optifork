@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import hashlib
+import bucketing
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Production imports
@@ -225,9 +226,7 @@ async def evaluate_flag(flag_name: str, user_id: str, request: Request, db: Asyn
         selected_segment = matching_segments[0]  # Already sorted by priority
         
         # Apply segment-specific rollout percentage
-        hash_val = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
-        normalized = (hash_val % 10000) / 10000.0
-        enabled = normalized < (selected_segment.rollout_percentage / 100.0)
+        enabled = bucketing.is_enabled(user_id, selected_segment.rollout_percentage / 100.0)
         
         # Log the exposure with segment info
         await crud.log_flag_exposure(db, flag.id, flag.name, user_id, enabled, selected_segment.segment_id)
@@ -247,9 +246,7 @@ async def evaluate_flag(flag_name: str, user_id: str, request: Request, db: Asyn
         return FlagResponse(flag=flag_name, user_id=user_id, enabled=False)
 
     # Apply rollout-based assignment (either no rules, or rules matched)
-    hash_val = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
-    normalized = (hash_val % 10000) / 10000.0
-    enabled = normalized < flag.rollout
+    enabled = bucketing.is_enabled(user_id, flag.rollout)
     
     # Log the exposure
     await crud.log_flag_exposure(db, flag.id, flag.name, user_id, enabled)

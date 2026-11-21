@@ -57,13 +57,9 @@ async def assign_user(
         user_attributes["country"] = country
 
     # 👇 Pass user attributes to the assignment logic
-    print('user_attributes')
-    print(user_attributes)
     variant = await crud.assign_user_to_variant(
         db, experiment.id, user_id, user_attributes=user_attributes
     )
-    print('variant')
-    print(variant)
     if not variant:
         raise HTTPException(status_code=400, detail="User not eligible for any variant.")
 

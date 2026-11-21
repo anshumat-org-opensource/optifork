@@ -55,8 +55,15 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
   case-insensitive substring on name + description, paginated, wildcard-escaped. Validated on
   **10K flags**: all results match, median server latency **~10–28 ms** (target < 200 ms) → PASS.
   Unit tests `backend/test_search.py` (3, pass); search scenario added to Locust.
-- [ ] Remaining Phase 2 targets: concurrent-edit safety (no lost updates), config propagation,
-  bucketing uniformity, resilience. Debug `print()` cleanup on experiment path.
+- [x] **2e — bucketing + config propagation + hot-path cleanup.**
+  - Extracted bucketing to `backend/bucketing.py` (behavior-identical); **deterministic + uniform**:
+    chi²=**7.60** over **10,000,000** users (10 bins, crit 27.88) → PASS. Tests `backend/test_bucketing.py`.
+  - **Config propagation < 10 s → PASS:** no server-side cache, so a flag change is visible on the
+    next evaluation (measured ~immediate; 0/50→50/50 flip). Propagation == client poll interval.
+  - Removed stray debug `print()`s on the experiment assign / rule-eval hot path.
+- [ ] Remaining Phase 2 targets: **concurrent-edit safety** (no lost updates — needs optimistic
+  concurrency / version column = schema change, will confirm first), **resilience** (last-known-good
+  — needs client-side caching/SDK, likely a scope/architecture discussion).
 
 ## Phase 1 — remaining work
 

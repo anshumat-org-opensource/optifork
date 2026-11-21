@@ -74,9 +74,7 @@ async def assign_user_to_variant(
             .options(selectinload(FeatureFlag.rules))  # ✅ eager load to avoid greenlet error
             .where(FeatureFlag.id == experiment.flag_id)
         )
-        print('flag_result')
         flag = flag_result.scalars().first()
-        print(flag)
         if flag and not evaluate_flag_rules(flag.rules, user_attributes):
             return None  # ❌ Not eligible
 
@@ -211,7 +209,6 @@ def evaluate_flag_rules(rules: list, user_attributes: dict) -> bool:
         op = getattr(rule, "op", None) or getattr(rule, "operator", None)
         val = getattr(rule, "value", None)
 
-        print(f"Evaluating Rule → field: {attr}, op: {op}, value: {val}")
         user_val = user_attributes.get(attr)
 
         if op == "equals" and user_val != val:
