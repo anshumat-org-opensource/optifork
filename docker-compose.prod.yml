@@ -130,6 +130,10 @@ services:
       # Monitoring
       ENABLE_METRICS: true
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+      # Uvicorn workers — single worker is the flag-eval p99 bottleneck under load
+      # (Phase 2). Default to the host core count; override as needed.
+      API_WORKERS: ${API_WORKERS:-4}
       
       # Backup configuration
       BACKUP_DIR: /app/backups
@@ -147,7 +151,10 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      # Was /health/ready — that route does not exist (monitoring router disabled), so
+      # the backend never became "healthy" and the frontend (depends_on: service_healthy)
+      # never started. Use the real /health endpoint. (Phase 2 finding.)
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

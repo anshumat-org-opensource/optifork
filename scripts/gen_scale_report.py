@@ -295,6 +295,15 @@ def main():
       "Fix: `crud.serialize_flag()` returns plain dicts (same shape). The scenario that reliably "
       "crashed (`MixedUser`) now runs with 0 failures. Regression test: "
       "`backend/test_flag_serialization.py`.")
+    w("- **Flag-eval p99 — profiled; worker-config fix (absolute target deferred).** Serial "
+      "eval floor is ~4–6 ms (incl. the exposure INSERT+COMMIT), so per-request work already "
+      "meets the target; the p99 blowup under load is single-Uvicorn-worker queuing. Workers are "
+      "now configurable via `API_WORKERS`. Measured 1x/2x/4x (FlagEvalUser u=120): "
+      "1w=634 rps/p50 180 ms, 2w=1043 rps/110 ms, 4w=1158 rps/85 ms (0 errors). Clean linear "
+      "scaling to 5,000 rps @ p99<20 ms needs a dedicated 2-machine env (load-gen separate from "
+      "the backend); on this laptop CPU is shared with the load generator + Postgres.")
+    w("- **prod healthcheck** `/health/ready` → `/health` (the route didn't exist, so the prod "
+      "frontend never started).")
     w("")
 
     # Gaps carried forward

@@ -53,6 +53,9 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-WARNING}
       # Dump a C/Python traceback on fatal signals (SIGSEGV/SIGABRT) for diagnosis.
       PYTHONFAULTHANDLER: "1"
+      # Uvicorn worker count — honored by the image CMD. Used to demonstrate 1x/2x/4x
+      # scaling (goal.md Phase 2); default 1 so a plain run is single-worker.
+      API_WORKERS: "${API_WORKERS:-1}"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

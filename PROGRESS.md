@@ -39,8 +39,13 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
   - **Root cause:** `GET /flags` returned **raw SQLAlchemy ORM objects** to FastAPI's encoder (no `response_model`); under concurrency walking the session-linked C state segfaults the worker. `/configs`/`/segments` survive because they serialize via `response_model`.
   - **Fix:** `crud.serialize_flag()` → `/flags` returns plain dicts (same shape). Verified: the original crasher `MixedUser` now runs **0 failures**, backend stays up (was exit 139).
   - **Regression test:** `backend/test_flag_serialization.py` (3 tests, pass) — fails if `/flags` reverts to raw ORM. (The asyncpg 0.29→0.30 bump tried during isolation was reverted — it was not the cause; the diff is just the serialization helper.)
-- [ ] **2b — flag-eval p99** (~160–270 ms vs < 20 ms target): profile the per-request exposure `INSERT`+`COMMIT` + segment N+1, then fix (indexes/async/batching/worker config).
-- [ ] Remaining Phase 2 targets: pagination, search, concurrent-edit safety, config propagation, bucketing, resilience.
+- [x] **2b — flag-eval p99: PROFILED + worker-config fix (absolute target deferred to 2-machine env).**
+  - Profiled: **serial eval floor is ~4–6 ms** (incl. the exposure INSERT+COMMIT) — per-request work already near the 20 ms target. The p99 blowup under load is **single-Uvicorn-worker queuing**, not query cost.
+  - Demonstrated 1×/2×/4× scaling (FlagEvalUser u=120): **1w = 634 rps / p50 180 ms · 2w = 1043 rps / 110 ms · 4w = 1158 rps / 85 ms**, all 0 errors. 2→4 flattens because the laptop also runs the load-gen + Postgres + airflow (CPU-bound); clean linear scaling + the absolute p99<20 ms @ 5,000 rps/30 min needs a dedicated 2-machine env.
+  - **Fix:** worker count is now configurable via `API_WORKERS` (prod Dockerfile CMD); prod compose defaults it to 4; scale compose uses it for the 1×/2×/4× demo. Verified end-to-end (0 startup errors, throughput scales).
+  - Also fixed the `docker-compose.prod.yml` `/health/ready` healthcheck bug (route doesn't exist → prod frontend never started) → `/health`.
+  - **Caveat noted:** multi-worker requires Postgres (SQLite serialises the exposure write); and `create_all`-at-startup can race across workers on a truly fresh DB (proper fix = migrations — a separate known gap).
+- [ ] Remaining Phase 2 targets: pagination, search, concurrent-edit safety, config propagation, bucketing, resilience. Debug `print()` cleanup on experiment path.
 
 ## Phase 1 — remaining work
 
