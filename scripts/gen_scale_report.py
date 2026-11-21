@@ -225,8 +225,9 @@ def main():
       "(10 bins, 9 dof, crit 27.88); deterministic per user_id | ✅ PASS |")
     w("| Resilience: restart under load, no data loss/corruption | data survived a Postgres+backend "
       "restart under load (flag + rollout intact); writes resume | ✅ PASS |")
-    w("| Resilience: last-known-good when backend/DB down | needs client-side caching / an SDK — "
-      "**architectural**; plan recorded below, awaiting approval | ⏳ needs approval |")
+    w("| Resilience: last-known-good when backend/DB down | **accepted limitation** (decided out "
+      "of scope, 2026-11-22): no client cache/SDK, so eval fails only if backend **and** DB are both "
+      "down. See architectural note below | ⚠️ accepted limitation |")
     w("")
 
     # Per-scenario Locust detail
@@ -344,8 +345,9 @@ def main():
       "edge cache). Smaller, but still adds a caching layer and a propagation story.")
     w("  3. **Do nothing** (accept that eval fails when the backend/DB is down). No change; target "
       "stays unmet and is recorded as a known limitation.")
-    w("- **Recommendation:** decide between (1) and (3) based on whether local-eval resilience is "
-      "in scope for this effort. Awaiting direction.")
+    w("- **Decision (2026-11-22): accepted option 3** — last-known-good offline resilience is **out "
+      "of scope** for this effort and recorded as a known limitation. No SDK/client cache is built. "
+      "Revisit if serving flags during a full backend+DB outage becomes a requirement.")
     w("")
 
     # Gaps carried forward

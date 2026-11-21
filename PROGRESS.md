@@ -4,10 +4,11 @@ Tracks execution of `goal.md`. Updated as each step completes.
 
 ## Current phase
 
-**Phase 1 — Scale harness: COMPLETE** (smoke baseline committed). `make scale-test` runs
-end-to-end from a fresh clone and writes `SCALE_REPORT.md` with honest pass/fail. Ready for
-Phase 2 pending go-ahead. The production-scale baseline (`make scale-test SCALE=full`) has
-not been run yet (deferred by request); the committed report is the **smoke** run.
+**Phase 2 — Backend scale targets & fixes: COMPLETE.** All targets pass except
+last-known-good resilience (accepted as an out-of-scope limitation) and the absolute
+flag-eval p99 @ 5k-rps (deferred to a 2-machine env — profiled, per-request floor ~4–6 ms,
+worker-scaling fix in place). Every Locust scenario now runs 0 failures (was crashing);
+17 backend unit tests pass. Ready for Phase 3 (UI redesign) when you are.
 
 ## Phase status
 
@@ -15,8 +16,8 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
 |---|---|---|
 | 0 — Inventory | ✅ Done, reviewed & approved | `FEATURES.md` + `ARCHITECTURE.md` committed. Audit kept out of scope. |
 | 1 — Scale harness | ✅ Done (smoke baseline) | Seed + Locust + FE bench + `make scale-test` + `SCALE_REPORT.md`. Full-scale run deferred. |
-| 2 — Backend scale targets & fixes | 🔶 Nearly done | All targets pass except last-known-good resilience (needs architectural approval — SDK). See scorecard. |
-| 3 — UI redesign | ⏳ Not started | Blocked by Phase 2. |
+| 2 — Backend scale targets & fixes | ✅ Done | 8/9 targets pass; last-known-good resilience = accepted limitation; absolute p99@5k deferred to 2-machine env. |
+| 3 — UI redesign | ⏳ Ready to start | Phase 2 complete. Needs go-ahead. |
 
 ## Done
 
@@ -70,10 +71,9 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
 - [x] **2g — resilience (restart under load): PASS.** Restarted Postgres + backend under load →
   the probe flag (rollout 0.42) survived (50→51 flags, no corruption), writes resumed (HTTP 200),
   recovered in ~2 s. Postgres durability + committed writes.
-- [ ] **Resilience (last-known-good when backend/DB down): NEEDS APPROVAL (architectural).** Clients
-  have no local cache, so this needs **client-side caching / an SDK** — the "move evaluation toward
-  an SDK" change the ground rules say to stop and ask on. Trade-offs written up in SCALE_REPORT
-  → "Architectural decisions needed". **This is the one open Phase 2 exit item.**
+- [x] **Resilience (last-known-good when backend/DB down): ACCEPTED LIMITATION (decided 2026-11-22).**
+  Reviewed the SDK/client-cache options; decided it is **out of scope** for this effort. Recorded as
+  a known limitation in SCALE_REPORT ("Architectural decisions needed"). No SDK built. **Phase 2 exits.**
 
 ### Phase 2 scorecard (smoke scale / laptop — absolute 5k-rps numbers need a 2-machine env)
 
@@ -87,7 +87,7 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
 | Config propagation < 10 s | ✅ (immediate; no cache) |
 | Bucketing deterministic + uniform | ✅ (chi²=7.60 / 10M) |
 | Resilience: restart no data loss | ✅ |
-| Resilience: last-known-good when down | ⏳ needs architectural approval (SDK) |
+| Resilience: last-known-good when down | ⚠️ accepted limitation (SDK out of scope) |
 
 ## Phase 1 — remaining work
 
