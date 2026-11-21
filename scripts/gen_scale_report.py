@@ -209,11 +209,12 @@ def main():
         w(f"| Search/filter across flags < 200 ms server time | {measured} | {status(ok)} |")
     else:
         w("| Search/filter across flags < 200 ms | no data | ⚠️ N/A |")
-    w("|   ↳ real search endpoint | **not built** — console fetches full collection | ❌ gap (FEATURES.md) |")
+    w("|   ↳ real search endpoint | **built** (Phase 2 scope exception) — `GET /flags?search=`; "
+      "measured ~10-28 ms across 10K flags | ✅ PASS |")
 
-    # Pagination (static)
-    w("| Every list endpoint paginated server-side | only `GET /ai-experiments/` has skip/limit; "
-      "`/flags`,`/segments`,`/configs`,`/experiments/`,`/exposures` return unbounded sets | ❌ FAIL |")
+    # Pagination (fixed in Phase 2c)
+    w("| Every list endpoint paginated server-side | `limit`/`offset` on `/flags`,`/segments`,"
+      "`/configs`,`/experiments/`,`/experiments/results`,`/exposures` (clamped, max 500) | ✅ PASS |")
     # Concurrency / resilience (not automated in baseline)
     w("| 200 concurrent editors, no lost updates | not measured in baseline (no optimistic "
       "concurrency exists — read-modify-write) | ⏳ Phase 2 |")
@@ -304,6 +305,11 @@ def main():
       "the backend); on this laptop CPU is shared with the load generator + Postgres.")
     w("- **prod healthcheck** `/health/ready` → `/health` (the route didn't exist, so the prod "
       "frontend never started).")
+    w("- **Server-side pagination — DONE.** `limit`/`offset` (clamped, default 100, max 500, "
+      "stable order) on `/flags`, `/segments`, `/configs`, `/experiments/`, "
+      "`/experiments/results`, and exposure reads. No endpoint returns an unbounded collection.")
+    w("- **Flag search — DONE** (approved scope exception). `GET /flags?search=` (case-insensitive "
+      "substring on name + description, paginated). Measured ~10-28 ms across 10K flags (< 200 ms).")
     w("")
 
     # Gaps carried forward

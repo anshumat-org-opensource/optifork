@@ -51,8 +51,11 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
   stable `order_by`. Unit tests `backend/test_pagination.py` (6, pass). Validated on the seeded
   stack: pages disjoint, sorted, cap holds, all endpoints 200. (Current frontend fetches with
   no params → gets the first page of 100; Phase 3 adds pagination UI.)
-- [ ] Remaining Phase 2 targets: **search/filter** (needs scope ruling — a new filter is a new
-  feature per frozen scope), concurrent-edit safety (no lost updates), config propagation,
+- [x] **2d — flag search (approved scope exception, 2026-11-21).** `GET /flags?search=<q>` —
+  case-insensitive substring on name + description, paginated, wildcard-escaped. Validated on
+  **10K flags**: all results match, median server latency **~10–28 ms** (target < 200 ms) → PASS.
+  Unit tests `backend/test_search.py` (3, pass); search scenario added to Locust.
+- [ ] Remaining Phase 2 targets: concurrent-edit safety (no lost updates), config propagation,
   bucketing uniformity, resilience. Debug `print()` cleanup on experiment path.
 
 ## Phase 1 — remaining work

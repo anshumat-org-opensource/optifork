@@ -276,7 +276,8 @@ review explicitly approves it.
   has no feature to seed against and is recorded N/A in `SCALE_REPORT.md` — not built.)*
 - **Server-side pagination** on list endpoints — only `GET /ai-experiments/` has `skip/limit`.
   `/flags`, `/segments`, `/configs`, `/experiments/`, all `/exposures` return unbounded sets.
-- **Search / filter** endpoints — none (the UI fetches everything and renders client-side).
+- **Search / filter** endpoints — *was* a gap; **now built** as an approved Phase 2 scope
+  exception (`GET /flags?search=`). See "Approved scope exceptions" below.
 - **Optimistic concurrency / versioning** — flag/config/segment updates are read-modify-write
   with no version column or conflict detection → concurrent edits silently overwrite.
 - **Client SDK / local evaluation** — evaluation is server-API-only; no SDK package, no
@@ -286,6 +287,16 @@ review explicitly approves it.
 - **AI experiment execution** — the offline evaluator is a stub (no model calls).
 - **Real scheduled exports** — scheduler module is disabled; the "scheduled export" endpoints
   return config echoes only.
+
+## Approved scope exceptions
+
+Additions explicitly approved during the hardening work, overriding the frozen-scope rule
+for the named item only. Everything else stays frozen.
+
+- **Flag search/filter** — *approved (Phase 2, 2026-11-21).* `GET /flags?search=<q>` does a
+  case-insensitive substring match on flag name + description, paginated. OptiFork had no
+  server-side search (console filtered client-side). Measured ~10–28 ms across the 10K-flag
+  dataset (target < 200 ms). Implemented in `crud.get_all_flags(search=...)`.
 
 ## UI ideas — not built
 

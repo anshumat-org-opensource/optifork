@@ -185,6 +185,12 @@ class ConsoleUser(HttpUser):
     def recent_exposures(self):
         self.client.get("/exposures?limit=100", name="GET /exposures?limit=100")
 
+    @task(3)
+    @tag("console", "search")
+    def search_flags(self):
+        term = random.choice(["checkout", "banner", "nav", "pricing", "feed"])
+        self.client.get(f"/flags?search={term}&limit=50", name="GET /flags?search= (search)")
+
 
 class MixedUser(HttpUser):
     """Realistic blend: mostly evaluation traffic with some console reads."""

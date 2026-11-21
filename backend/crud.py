@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import or_
 
 from models import FeatureFlag, Rule, FlagExposure, UserSegment, FlagSegment, RemoteConfig, ConfigSegment, ConfigExposure
 try:
@@ -31,15 +32,30 @@ def clamp_pagination(limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
     return limit, offset
 
 
-async def get_all_flags(db: AsyncSession, limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
+def _like_escape(term: str) -> str:
+    """Escape LIKE/ILIKE wildcards so user input is matched literally."""
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+async def get_all_flags(db: AsyncSession, limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0, search: str = None):
+    """List flags (paginated). Optional server-side search on name + description.
+
+    `search` is an approved Phase 2 scope exception (a new filter capability). Case-
+    insensitive substring match; bounded + ordered, so it stays well under the 200 ms
+    target across the 10K-flag dataset.
+    """
     limit, offset = clamp_pagination(limit, offset)
-    result = await db.execute(
-        select(FeatureFlag)
-        .options(selectinload(FeatureFlag.rules))
-        .order_by(FeatureFlag.name)   # stable order for pagination
-        .limit(limit)
-        .offset(offset)
-    )
+    stmt = select(FeatureFlag).options(selectinload(FeatureFlag.rules))
+    if search and search.strip():
+        pattern = f"%{_like_escape(search.strip())}%"
+        stmt = stmt.where(
+            or_(
+                FeatureFlag.name.ilike(pattern, escape="\\"),
+                FeatureFlag.description.ilike(pattern, escape="\\"),
+            )
+        )
+    stmt = stmt.order_by(FeatureFlag.name).limit(limit).offset(offset)
+    result = await db.execute(stmt)
     return result.scalars().all()
 
 
