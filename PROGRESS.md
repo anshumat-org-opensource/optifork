@@ -45,7 +45,15 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
   - **Fix:** worker count is now configurable via `API_WORKERS` (prod Dockerfile CMD); prod compose defaults it to 4; scale compose uses it for the 1×/2×/4× demo. Verified end-to-end (0 startup errors, throughput scales).
   - Also fixed the `docker-compose.prod.yml` `/health/ready` healthcheck bug (route doesn't exist → prod frontend never started) → `/health`.
   - **Caveat noted:** multi-worker requires Postgres (SQLite serialises the exposure write); and `create_all`-at-startup can race across workers on a truly fresh DB (proper fix = migrations — a separate known gap).
-- [ ] Remaining Phase 2 targets: pagination, search, concurrent-edit safety, config propagation, bucketing, resilience. Debug `print()` cleanup on experiment path.
+- [x] **2c — server-side pagination (no unbounded collections).** `limit`/`offset` on
+  `/flags`, `/segments`, `/configs`, `/experiments/`, `/experiments/results`, and the exposure
+  reads; clamped via `crud.clamp_pagination` (default 100, max 500, non-negative offset),
+  stable `order_by`. Unit tests `backend/test_pagination.py` (6, pass). Validated on the seeded
+  stack: pages disjoint, sorted, cap holds, all endpoints 200. (Current frontend fetches with
+  no params → gets the first page of 100; Phase 3 adds pagination UI.)
+- [ ] Remaining Phase 2 targets: **search/filter** (needs scope ruling — a new filter is a new
+  feature per frozen scope), concurrent-edit safety (no lost updates), config propagation,
+  bucketing uniformity, resilience. Debug `print()` cleanup on experiment path.
 
 ## Phase 1 — remaining work
 

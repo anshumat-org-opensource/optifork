@@ -140,8 +140,8 @@ async def create_flag(flag: FeatureFlagIn, db: AsyncSession = Depends(get_db)):
 
 # ✅ List flags
 @app.get("/flags")
-async def list_flags(db: AsyncSession = Depends(get_db)):
-    flags = await crud.get_all_flags(db)
+async def list_flags(limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    flags = await crud.get_all_flags(db, limit=limit, offset=offset)
     # Serialize to plain dicts instead of returning raw SQLAlchemy ORM objects.
     # Returning ORM instances to FastAPI's encoder under concurrency segfaulted the
     # worker (SIGSEGV / exit 139) — isolated in Phase 2 (see SCALE_REPORT.md).
@@ -304,9 +304,9 @@ async def create_user_segment(segment: UserSegmentIn, db: AsyncSession = Depends
     )
 
 @app.get("/segments", response_model=List[UserSegmentOut])
-async def list_user_segments(db: AsyncSession = Depends(get_db)):
-    """List all user segments"""
-    segments = await crud.get_all_user_segments(db)
+async def list_user_segments(limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    """List user segments (paginated)"""
+    segments = await crud.get_all_user_segments(db, limit=limit, offset=offset)
     return [
         UserSegmentOut(
             id=segment.id,
@@ -501,9 +501,9 @@ async def create_remote_config(config: RemoteConfigIn, db: AsyncSession = Depend
     )
 
 @app.get("/configs", response_model=List[RemoteConfigOut])
-async def list_remote_configs(db: AsyncSession = Depends(get_db)):
-    """List all remote configurations"""
-    configs = await crud.get_all_remote_configs(db)
+async def list_remote_configs(limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    """List remote configurations (paginated)"""
+    configs = await crud.get_all_remote_configs(db, limit=limit, offset=offset)
     return [
         RemoteConfigOut(
             id=config.id,

@@ -17,10 +17,28 @@ async def get_flag_by_name(db: AsyncSession, name: str):
     )
     return result.scalar_one_or_none()
 
-async def get_all_flags(db: AsyncSession):
+# Pagination: no list endpoint returns an unbounded collection (Phase 2 target).
+DEFAULT_PAGE_LIMIT = 100
+MAX_PAGE_LIMIT = 500
+
+
+def clamp_pagination(limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
+    """Clamp limit/offset to safe bounds so no query can request an unbounded set."""
+    if limit is None:
+        limit = DEFAULT_PAGE_LIMIT
+    limit = max(1, min(int(limit), MAX_PAGE_LIMIT))
+    offset = max(0, int(offset or 0))
+    return limit, offset
+
+
+async def get_all_flags(db: AsyncSession, limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
+    limit, offset = clamp_pagination(limit, offset)
     result = await db.execute(
         select(FeatureFlag)
         .options(selectinload(FeatureFlag.rules))
+        .order_by(FeatureFlag.name)   # stable order for pagination
+        .limit(limit)
+        .offset(offset)
     )
     return result.scalars().all()
 
@@ -103,16 +121,15 @@ async def log_flag_exposure(db: AsyncSession, flag_id: int, flag_name: str, user
     await db.commit()
     return exposure
 
-async def get_flag_exposures(db: AsyncSession, flag_name: str = None, limit: int = 100):
-    """Get flag exposure logs"""
+async def get_flag_exposures(db: AsyncSession, flag_name: str = None, limit: int = 100, offset: int = 0):
+    """Get flag exposure logs (bounded — never unbounded)"""
+    limit, offset = clamp_pagination(limit, offset)
     query = select(FlagExposure).order_by(FlagExposure.timestamp.desc())
-    
+
     if flag_name:
         query = query.where(FlagExposure.flag_name == flag_name)
-    
-    if limit:
-        query = query.limit(limit)
-    
+
+    query = query.limit(limit).offset(offset)
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -146,9 +163,12 @@ async def get_user_segment_by_id(db: AsyncSession, segment_id: int):
     )
     return result.scalar_one_or_none()
 
-async def get_all_user_segments(db: AsyncSession):
-    """Get all user segments"""
-    result = await db.execute(select(UserSegment).order_by(UserSegment.name))
+async def get_all_user_segments(db: AsyncSession, limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
+    """Get user segments (paginated)"""
+    limit, offset = clamp_pagination(limit, offset)
+    result = await db.execute(
+        select(UserSegment).order_by(UserSegment.name).limit(limit).offset(offset)
+    )
     return result.scalars().all()
 
 async def update_user_segment(db: AsyncSession, segment_id: int, segment_in: UserSegmentIn):
@@ -333,12 +353,15 @@ async def get_remote_config_by_id(db: AsyncSession, config_id: int):
     )
     return result.scalar_one_or_none()
 
-async def get_all_remote_configs(db: AsyncSession):
-    """Get all remote configurations"""
+async def get_all_remote_configs(db: AsyncSession, limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
+    """Get remote configurations (paginated)"""
+    limit, offset = clamp_pagination(limit, offset)
     result = await db.execute(
         select(RemoteConfig)
         .options(selectinload(RemoteConfig.config_segments).selectinload(ConfigSegment.segment))
         .order_by(RemoteConfig.key)
+        .limit(limit)
+        .offset(offset)
     )
     return result.scalars().all()
 
@@ -506,15 +529,14 @@ async def log_config_exposure(db: AsyncSession, config_id: int, config_key: str,
     await db.commit()
     return exposure
 
-async def get_config_exposures(db: AsyncSession, config_key: str = None, limit: int = 100):
-    """Get config exposure logs"""
+async def get_config_exposures(db: AsyncSession, config_key: str = None, limit: int = 100, offset: int = 0):
+    """Get config exposure logs (bounded — never unbounded)"""
+    limit, offset = clamp_pagination(limit, offset)
     query = select(ConfigExposure).order_by(ConfigExposure.timestamp.desc())
-    
+
     if config_key:
         query = query.where(ConfigExposure.config_key == config_key)
-    
-    if limit:
-        query = query.limit(limit)
-    
+
+    query = query.limit(limit).offset(offset)
     result = await db.execute(query)
     return result.scalars().all()

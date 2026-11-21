@@ -25,9 +25,16 @@ async def create_experiment(payload: ExperimentCreate, db: AsyncSession = Depend
 
 
 @router.get("/", response_model=List[ExperimentOut])
-async def list_experiments(db: AsyncSession = Depends(get_db)):
+async def list_experiments(limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    # Paginated — no unbounded collection (Phase 2 target).
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset or 0))
     result = await db.execute(
-        select(Experiment).options(selectinload(Experiment.variants))
+        select(Experiment)
+        .options(selectinload(Experiment.variants))
+        .order_by(Experiment.name)
+        .limit(limit)
+        .offset(offset)
     )
     experiments = result.scalars().all()
     return experiments
@@ -81,5 +88,5 @@ async def log_exposure(experiment_name: str, user_id: str, db: AsyncSession = De
 
 
 @router.get("/results")
-async def get_experiment_results(db: AsyncSession = Depends(get_db)):
-    return await crud.get_experiment_results(db)
+async def get_experiment_results(limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    return await crud.get_experiment_results(db, limit=limit, offset=offset)

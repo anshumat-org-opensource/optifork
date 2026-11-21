@@ -135,8 +135,17 @@ async def log_exposure(db: AsyncSession, experiment_id: int, variant_id: int, us
     return log
 
 
-async def get_experiment_results(db: AsyncSession):
-    experiments = await db.execute(select(Experiment).options(selectinload(Experiment.variants)))
+async def get_experiment_results(db: AsyncSession, limit: int = 100, offset: int = 0):
+    # Bounded page — never load every experiment at once (Phase 2 target).
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset or 0))
+    experiments = await db.execute(
+        select(Experiment)
+        .options(selectinload(Experiment.variants))
+        .order_by(Experiment.name)
+        .limit(limit)
+        .offset(offset)
+    )
     experiments = experiments.scalars().all()
     results = []
 
