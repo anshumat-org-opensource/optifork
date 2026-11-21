@@ -223,7 +223,10 @@ def main():
       "next evaluation (measured ~immediate); propagation == client poll interval | ✅ PASS |")
     w("| Bucketing deterministic + uniform (chi-square, 10M) | chi²=7.60 over 10,000,000 users "
       "(10 bins, 9 dof, crit 27.88); deterministic per user_id | ✅ PASS |")
-    w("| Resilience: last-known-good when backend/DB down | not measured (no client cache exists) | ⏳ Phase 2 |")
+    w("| Resilience: restart under load, no data loss/corruption | data survived a Postgres+backend "
+      "restart under load (flag + rollout intact); writes resume | ✅ PASS |")
+    w("| Resilience: last-known-good when backend/DB down | needs client-side caching / an SDK — "
+      "**architectural**; plan recorded below, awaiting approval | ⏳ needs approval |")
     w("")
 
     # Per-scenario Locust detail
@@ -320,21 +323,43 @@ def main():
       "no-cache propagation is immediate; removed debug `print()`s on the experiment path.")
     w("")
 
-    # Gaps carried forward
-    w("## Known gaps carried into Phase 2 (from FEATURES.md / findings)")
+    # Architectural decisions needing approval (Phase 2 exit criteria)
+    w("## Architectural decisions needed (await approval)")
     w("")
-    w("- No server-side pagination on most list endpoints; no search endpoint.")
-    w("- No optimistic concurrency/versioning → concurrent edits last-writer-wins.")
-    w("- Exposure logging is a synchronous INSERT+COMMIT on every evaluation (write amplification).")
-    w("- Exposure reads sort by an unindexed `timestamp`.")
-    w("- Single Uvicorn worker; no caching; evaluation is server-API-only (no SDK).")
-    w("- `docker-compose.prod.yml` backend healthcheck points at `/health/ready`, which does not "
-      "exist (monitoring router disabled) — prod frontend would never start. Scale harness uses "
-      "`docker-compose.scale.yml` with a working `/health` check.")
-    w("- No DB migrations (`create_all` only) → existing SQLite files drift from the models.")
-    w("- Debug `print()` statements on the hot path (experiment assign: `user_attributes`, "
-      "`flag_result`, flag repr) spam stdout under load — Phase 2 cleanup.")
-    w("- Backend became unavailable under mixed load (see above); needs memory profiling in Phase 2.")
+    w("Per the ground rules, these are **not** built without sign-off; the plan + trade-offs are "
+      "recorded here so a Phase 2 target can exit as *approved plan* rather than *passing test*.")
+    w("")
+    w("### Last-known-good flag values when the backend/DB is down")
+    w("")
+    w("- **Why it needs an architectural change:** evaluation is a server API call today; clients "
+      "hold no local state, so if the backend or DB is unreachable, a call simply fails. Serving "
+      "last-known values requires caching flag config **on the client side** — i.e. introducing a "
+      "lightweight SDK (or a cached config snapshot endpoint + client that stores it). That is "
+      "explicitly the 'move evaluation toward an SDK' change the ground rules say to stop and ask on.")
+    w("- **Options & trade-offs:**")
+    w("  1. **Client SDK with local cache + background refresh.** Clients fetch a config snapshot, "
+      "evaluate locally, refresh every N seconds; serve the cached snapshot if refresh fails. Best "
+      "resilience + removes per-eval latency, but is a real new component (biggest change).")
+    w("  2. **Snapshot endpoint + thin cache in the existing server-call path** (e.g. a sidecar/"
+      "edge cache). Smaller, but still adds a caching layer and a propagation story.")
+    w("  3. **Do nothing** (accept that eval fails when the backend/DB is down). No change; target "
+      "stays unmet and is recorded as a known limitation.")
+    w("- **Recommendation:** decide between (1) and (3) based on whether local-eval resilience is "
+      "in scope for this effort. Awaiting direction.")
+    w("")
+
+    # Gaps carried forward
+    w("## Remaining known gaps (post Phase 2)")
+    w("")
+    w("Still open after the Phase 2 fixes above:")
+    w("- Exposure logging is a synchronous INSERT+COMMIT on every evaluation (write amplification) "
+      "and exposure reads sort by an **unindexed `timestamp`** — not yet optimized (per-eval floor "
+      "is still only ~4-6 ms, so not a current failure; revisit if it shows up at full scale).")
+    w("- **No DB migrations** (`create_all` only) → schema changes (e.g. the new `version` column) "
+      "need a fresh DB or a manual migration; existing SQLite files drift from the models.")
+    w("- Optimistic concurrency implemented for **flags**; segments/configs still last-writer-wins "
+      "(no reported requirement, but noted for symmetry).")
+    w("- Last-known-good resilience is unbuilt pending the architectural decision above.")
     w("")
 
     content = "\n".join(L) + "\n"
