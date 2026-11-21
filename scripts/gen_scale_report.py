@@ -285,6 +285,18 @@ def main():
         w("_No frontend benchmark data (frontend_report.json missing)._")
     w("")
 
+    # Phase 2 fixes applied (static changelog so the regenerated report self-documents)
+    w("## Phase 2 — fixes applied")
+    w("")
+    w("- **Backend segfault under load (availability) — FIXED.** Root cause (profiled, not "
+      "guessed): `GET /flags` returned raw SQLAlchemy ORM objects to FastAPI's encoder; under "
+      "concurrency this segfaults the worker (SIGSEGV / exit 139, `OOMKilled=false`, memory "
+      "flat). Isolation ruled out OOM, uvloop/httptools, and the asyncpg statement-cache/version. "
+      "Fix: `crud.serialize_flag()` returns plain dicts (same shape). The scenario that reliably "
+      "crashed (`MixedUser`) now runs with 0 failures. Regression test: "
+      "`backend/test_flag_serialization.py`.")
+    w("")
+
     # Gaps carried forward
     w("## Known gaps carried into Phase 2 (from FEATURES.md / findings)")
     w("")

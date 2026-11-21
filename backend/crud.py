@@ -24,6 +24,23 @@ async def get_all_flags(db: AsyncSession):
     )
     return result.scalars().all()
 
+
+def serialize_flag(flag) -> dict:
+    """Serialize a FeatureFlag ORM object to a plain, JSON-safe dict.
+
+    Endpoints MUST return the output of this (or equivalent plain data), never raw
+    SQLAlchemy ORM instances: returning ORM objects to FastAPI's encoder segfaults the
+    worker under concurrency (SIGSEGV / exit 139) — root-caused in Phase 2. Assumes
+    `flag.rules` is already loaded (e.g. via selectinload) so no lazy IO is triggered.
+    """
+    return {
+        "id": flag.id,
+        "name": flag.name,
+        "description": flag.description,
+        "rollout": flag.rollout,
+        "rules": [{"field": r.field, "op": r.op, "value": r.value} for r in flag.rules],
+    }
+
 async def create_flag(db: AsyncSession, flag_in: FeatureFlagIn):
     flag = FeatureFlag(
         name=flag_in.name,

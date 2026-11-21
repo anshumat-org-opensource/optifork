@@ -51,6 +51,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-optifork}:${POSTGRES_PASSWORD:-optifork_secret}@postgres:5432/${POSTGRES_DB:-optifork}
       ENVIRONMENT: production
       LOG_LEVEL: ${LOG_LEVEL:-WARNING}
+      # Dump a C/Python traceback on fatal signals (SIGSEGV/SIGABRT) for diagnosis.
+      PYTHONFAULTHANDLER: "1"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

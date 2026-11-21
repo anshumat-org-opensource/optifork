@@ -141,7 +141,11 @@ async def create_flag(flag: FeatureFlagIn, db: AsyncSession = Depends(get_db)):
 # ✅ List flags
 @app.get("/flags")
 async def list_flags(db: AsyncSession = Depends(get_db)):
-    return await crud.get_all_flags(db)
+    flags = await crud.get_all_flags(db)
+    # Serialize to plain dicts instead of returning raw SQLAlchemy ORM objects.
+    # Returning ORM instances to FastAPI's encoder under concurrency segfaulted the
+    # worker (SIGSEGV / exit 139) — isolated in Phase 2 (see SCALE_REPORT.md).
+    return [crud.serialize_flag(f) for f in flags]
 
 # ✅ Update flag
 @app.put("/flags/{flag_name}")

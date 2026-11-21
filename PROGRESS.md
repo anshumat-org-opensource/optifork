@@ -15,7 +15,7 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
 |---|---|---|
 | 0 — Inventory | ✅ Done, reviewed & approved | `FEATURES.md` + `ARCHITECTURE.md` committed. Audit kept out of scope. |
 | 1 — Scale harness | ✅ Done (smoke baseline) | Seed + Locust + FE bench + `make scale-test` + `SCALE_REPORT.md`. Full-scale run deferred. |
-| 2 — Backend scale targets & fixes | ⏳ Ready to start | Phase 1 committed. Needs go-ahead. |
+| 2 — Backend scale targets & fixes | 🔶 In progress | 2a: backend-crash root-caused + fixed (SIGSEGV from raw-ORM `/flags`). 2b: flag-eval p99 next. |
 | 3 — UI redesign | ⏳ Not started | Blocked by Phase 2. |
 
 ## Done
@@ -30,6 +30,17 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
   - Wrote `frontend_bench/` (bench.mjs + package.json + README) — Playwright/web-vitals harness.
   - Wrote `docker-compose.scale.yml`, `Makefile`, `scripts/run_scale_test.sh`,
     `scripts/gen_scale_report.py`; ran smoke `make scale-test`; committed baseline `SCALE_REPORT.md`.
+
+## Phase 2 — backend fixes (in progress; laptop = bug-fixing only, absolute targets deferred to 2-machine env)
+
+- [x] **2a — backend unavailable under load: ROOT-CAUSED + FIXED.**
+  - Profiled (not guessed): `docker inspect` showed `ExitCode=139` / `OOMKilled=false` → **SIGSEGV, not OOM** (memory flat ~111 MiB). `PYTHONFAULTHANDLER` confirmed a native segfault.
+  - Ruled out by isolation: uvloop/httptools (`--loop asyncio --http h11` still crashed), asyncpg stmt-cache (`prepared_statement_cache_size=0` still crashed), asyncpg version (0.29→0.30 still crashed), OOM. Each eval endpoint alone (flag/config/experiment, u=120) survived; `/segments` and `/configs` survived; **`GET /flags` crashed**.
+  - **Root cause:** `GET /flags` returned **raw SQLAlchemy ORM objects** to FastAPI's encoder (no `response_model`); under concurrency walking the session-linked C state segfaults the worker. `/configs`/`/segments` survive because they serialize via `response_model`.
+  - **Fix:** `crud.serialize_flag()` → `/flags` returns plain dicts (same shape). Verified: the original crasher `MixedUser` now runs **0 failures**, backend stays up (was exit 139).
+  - **Regression test:** `backend/test_flag_serialization.py` (3 tests, pass) — fails if `/flags` reverts to raw ORM. (The asyncpg 0.29→0.30 bump tried during isolation was reverted — it was not the cause; the diff is just the serialization helper.)
+- [ ] **2b — flag-eval p99** (~160–270 ms vs < 20 ms target): profile the per-request exposure `INSERT`+`COMMIT` + segment N+1, then fix (indexes/async/batching/worker config).
+- [ ] Remaining Phase 2 targets: pagination, search, concurrent-edit safety, config propagation, bucketing, resilience.
 
 ## Phase 1 — remaining work
 

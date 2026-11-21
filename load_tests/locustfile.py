@@ -145,6 +145,16 @@ class ConfigEvalUser(HttpUser):
         eval_config(self.client)
 
 
+class ExperimentAssignUser(HttpUser):
+    """Pure experiment variant-assignment hot path."""
+    wait_time = between(0, 0)
+
+    @task
+    @tag("eval", "experiment")
+    def _assign(self):
+        assign_experiment(self.client)
+
+
 class ConsoleUser(HttpUser):
     """Console list/read endpoints (unbounded today — the pagination target)."""
     wait_time = between(0.5, 2.0)
