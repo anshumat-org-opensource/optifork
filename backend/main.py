@@ -117,6 +117,9 @@ class FeatureFlagIn(BaseModel):
     description: Optional[str] = None
     rollout: float
     rules: Optional[List[RuleIn]] = []
+    # Optional optimistic-concurrency token (the version the client last read). When
+    # provided, the update is rejected with 409 if the flag changed in the meantime.
+    expected_version: Optional[int] = None
 
 class FlagResponse(BaseModel):
     flag: str
@@ -156,8 +159,13 @@ async def update_flag(flag_name: str, flag: FeatureFlagIn, db: AsyncSession = De
         raise HTTPException(status_code=404, detail="Flag not found")
     if not 0.0 <= flag.rollout <= 1.0:
         raise HTTPException(status_code=400, detail="Rollout must be between 0 and 1")
-    await crud.update_flag(db, flag_name, flag)
-    return {"message": f"Flag '{flag_name}' updated successfully"}
+    result = await crud.update_flag(db, flag_name, flag, expected_version=flag.expected_version)
+    if result is crud.FLAG_UPDATE_CONFLICT:
+        raise HTTPException(
+            status_code=409,
+            detail="Flag was modified by another request (version conflict). Reload the latest version and retry.",
+        )
+    return {"message": f"Flag '{flag_name}' updated successfully", "version": result.version}
 
 # ✅ Get flag exposures
 @app.get("/flags/{flag_name}/exposures")

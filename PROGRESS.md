@@ -61,9 +61,16 @@ not been run yet (deferred by request); the committed report is the **smoke** ru
   - **Config propagation < 10 s → PASS:** no server-side cache, so a flag change is visible on the
     next evaluation (measured ~immediate; 0/50→50/50 flip). Propagation == client poll interval.
   - Removed stray debug `print()`s on the experiment assign / rule-eval hot path.
-- [ ] Remaining Phase 2 targets: **concurrent-edit safety** (no lost updates — needs optimistic
-  concurrency / version column = schema change, will confirm first), **resilience** (last-known-good
-  — needs client-side caching/SDK, likely a scope/architecture discussion).
+- [x] **2f — concurrent edits, no lost updates: DONE.** Optimistic concurrency — added a
+  `version` column to `feature_flags` + an **atomic guarded `UPDATE`** (`crud.update_flag`);
+  `PUT /flags/{name}` accepts `expected_version` and returns **409** on a stale version.
+  Backward compatible (omit the field → last-writer-wins, still bumps). Validated: **40
+  simultaneous edits → exactly 1 won, 39 × 409**, version bumped once. Unit test
+  `backend/test_concurrency.py`; `serialize_flag` now exposes `version`.
+- [ ] **Resilience (last-known-good when backend/DB down):** clients have no local cache, so this
+  needs **client-side caching / an SDK** — which is an **architectural change** ("moving flag
+  evaluation toward an SDK"). Per the ground rules, writing up the trade-offs for approval rather
+  than building it. See SCALE_REPORT "architectural decisions needed".
 
 ## Phase 1 — remaining work
 

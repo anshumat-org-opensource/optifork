@@ -27,7 +27,7 @@ def test_serialize_flag_returns_plain_dict_not_orm():
     out = crud.serialize_flag(_make_flag())
     assert type(out) is dict                       # a plain dict...
     assert not isinstance(out, FeatureFlag)        # ...never the ORM instance
-    assert set(out) == {"id", "name", "description", "rollout", "rules"}
+    assert set(out) == {"id", "name", "description", "rollout", "version", "rules"}
     assert out["id"] == 1 and out["rollout"] == 0.25
 
 

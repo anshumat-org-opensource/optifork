@@ -1,7 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import or_
+from sqlalchemy import or_, update as sa_update, delete as sa_delete
+
+# Sentinel returned by update_flag when an optimistic-concurrency check fails.
+FLAG_UPDATE_CONFLICT = object()
 
 from models import FeatureFlag, Rule, FlagExposure, UserSegment, FlagSegment, RemoteConfig, ConfigSegment, ConfigExposure
 try:
@@ -72,6 +75,7 @@ def serialize_flag(flag) -> dict:
         "name": flag.name,
         "description": flag.description,
         "rollout": flag.rollout,
+        "version": flag.version,
         "rules": [{"field": r.field, "op": r.op, "value": r.value} for r in flag.rules],
     }
 
@@ -96,33 +100,46 @@ async def create_flag(db: AsyncSession, flag_in: FeatureFlagIn):
     await db.refresh(flag)
     return flag
 
-async def update_flag(db: AsyncSession, flag_name: str, flag_in: FeatureFlagIn):
-    # Get the existing flag
+async def update_flag(db: AsyncSession, flag_name: str, flag_in: FeatureFlagIn, expected_version: int = None):
+    """Update a flag.
+
+    If `expected_version` is given, the update is applied **atomically** only when the
+    flag's current version still matches — otherwise `FLAG_UPDATE_CONFLICT` is returned
+    and nothing is written (no silent overwrite of a concurrent edit). When omitted,
+    behaviour is last-writer-wins (backward compatible), but the version still bumps.
+    """
     existing_flag = await get_flag_by_name(db, flag_name)
     if not existing_flag:
         return None
-    
-    # Update basic fields
-    existing_flag.name = flag_in.name
-    existing_flag.description = flag_in.description
-    existing_flag.rollout = flag_in.rollout
-    
-    # Delete existing rules
-    for rule in existing_flag.rules:
-        await db.delete(rule)
-    
-    # Add new rules
+
+    flag_id = existing_flag.id
+
+    # Atomically bump the scalar fields + version. With expected_version, the WHERE
+    # clause guards against a concurrent writer; rowcount==0 means someone else won.
+    where = [FeatureFlag.id == flag_id]
+    if expected_version is not None:
+        where.append(FeatureFlag.version == expected_version)
+    result = await db.execute(
+        sa_update(FeatureFlag)
+        .where(*where)
+        .values(
+            name=flag_in.name,
+            description=flag_in.description,
+            rollout=flag_in.rollout,
+            version=FeatureFlag.version + 1,
+        )
+    )
+    if result.rowcount == 0:
+        await db.rollback()
+        return FLAG_UPDATE_CONFLICT
+
+    # Replace rules (the guarded version bump above serializes concurrent editors).
+    await db.execute(sa_delete(Rule).where(Rule.flag_id == flag_id))
     for rule in flag_in.rules:
-        db.add(Rule(
-            flag_id=existing_flag.id,
-            field=rule.field,
-            op=rule.op,
-            value=rule.value
-        ))
-    
+        db.add(Rule(flag_id=flag_id, field=rule.field, op=rule.op, value=rule.value))
+
     await db.commit()
-    await db.refresh(existing_flag)
-    return existing_flag
+    return await get_flag_by_name(db, flag_in.name)
 
 async def log_flag_exposure(db: AsyncSession, flag_id: int, flag_name: str, user_id: str, enabled: bool, segment_id: int = None):
     """Log when a user is exposed to a feature flag"""
