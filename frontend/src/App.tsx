@@ -19,6 +19,7 @@ import AIExperimentDetails from "./components/AIExperimentDetails";
 import Debug from "./components/Debug";
 import UserSegments from "./components/UserSegments";
 import RemoteConfigs from "./components/RemoteConfigs";
+import { Icon } from "./ui/Icon";
 
 interface User {
   id: string;
@@ -212,7 +213,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">🚩</span>
+                <Icon name="flags" />
                 {!isCollapsed && <span className="ml-3">Feature Flags</span>}
               </button>
               {activeTab === "flags" && !isCollapsed && (
@@ -261,7 +262,7 @@ export default function App() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <span className="text-base">👥</span>
+              <Icon name="segments" />
               {!isCollapsed && <span className="ml-3">User Segments</span>}
             </button>
           )}
@@ -275,7 +276,7 @@ export default function App() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <span className="text-base">⚙️</span>
+              <Icon name="configs" />
               {!isCollapsed && <span className="ml-3">Remote Configs</span>}
             </button>
           )}
@@ -290,7 +291,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">🧪</span>
+                <Icon name="experiments" />
                 {!isCollapsed && <span className="ml-3">Experiments</span>}
               </button>
               {activeTab === "experiments" && !isCollapsed && (
@@ -340,7 +341,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">🤖</span>
+                <Icon name="ai" />
                 {!isCollapsed && <span className="ml-3">AI Experiments</span>}
               </button>
               {activeTab === "ai-experiments" && !isCollapsed && (
@@ -389,7 +390,7 @@ export default function App() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <span className="text-base">🔌</span>
+              <Icon name="integration" />
               {!isCollapsed && <span className="ml-3">Integration</span>}
             </button>
           )}
@@ -404,7 +405,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">📊</span>
+                <Icon name="export" />
                 {!isCollapsed && <span className="ml-3">Data Export</span>}
               </button>
               <button
@@ -415,7 +416,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">👥</span>
+                <Icon name="users" />
                 {!isCollapsed && <span className="ml-3">Users</span>}
               </button>
               <button
@@ -426,7 +427,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">🐛</span>
+                <Icon name="debug" />
                 {!isCollapsed && <span className="ml-3">Debug</span>}
               </button>
             </>
@@ -440,7 +441,7 @@ export default function App() {
               onClick={handleLogout}
               className="w-full flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
             >
-              <span>🚪</span>
+              <Icon name="logout" />
               <span className="ml-3">Logout</span>
             </button>
           ) : (
@@ -449,7 +450,7 @@ export default function App() {
               className="w-full flex justify-center py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
               title="Logout"
             >
-              🚪
+              <Icon name="logout" />
             </button>
           )}
         </div>
