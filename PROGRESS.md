@@ -4,11 +4,21 @@ Tracks execution of `goal.md`. Updated as each step completes.
 
 ## Current phase
 
-**Phase 2 — Backend scale targets & fixes: COMPLETE.** All targets pass except
-last-known-good resilience (accepted as an out-of-scope limitation) and the absolute
-flag-eval p99 @ 5k-rps (deferred to a 2-machine env — profiled, per-request floor ~4–6 ms,
-worker-scaling fix in place). Every Locust scenario now runs 0 failures (was crashing);
-17 backend unit tests pass. Ready for Phase 3 (UI redesign) when you are.
+**Phase 3 — UI redesign (scoped to the 3 worst workflows: find-a-flag · kill-switch · flags
+table).** Step 1 benchmark (`UI_BENCHMARK.md`) + Step 2 design system (`src/ui/*`, tokens) +
+Step 3 for the Feature Flags screen are DONE and verified against every quality bar
+(CLS 0.067→0.001, axe 0 violations, kill in 2 interactions with impact preview, virtualized
+table, search wired to `GET /flags?search=`). Other screens remain on old styling.
+
+### Phase 3 progress
+- [x] Step 1 — `UI_BENCHMARK.md`: 9 core workflows, OptiFork-today vs Statsig, quality-bar baseline.
+- [x] Step 2 — design system: tokens (`src/index.css`, `tailwind.config.js`) + components
+  (`src/ui/`: Button, SearchInput, StatusBadge, VirtualList, ConfirmDialog, Toast, EmptyState, Skeleton).
+- [x] Step 3 (flags) — rebuilt Feature Flags screen: searchable + virtualized + paginated table,
+  per-row **Kill** with impact-preview confirm, status badges, create tucked behind "＋ New flag".
+  All states (loading/error/empty/no-results/long-values/10K). Review (Step 4) done for this screen.
+- [ ] Remaining screens (Segments, Configs, Experiments, Exposures, Test, Create internals) — migrate
+  onto the design system next if in scope.
 
 ## Phase status
 
@@ -17,7 +27,7 @@ worker-scaling fix in place). Every Locust scenario now runs 0 failures (was cra
 | 0 — Inventory | ✅ Done, reviewed & approved | `FEATURES.md` + `ARCHITECTURE.md` committed. Audit kept out of scope. |
 | 1 — Scale harness | ✅ Done (smoke baseline) | Seed + Locust + FE bench + `make scale-test` + `SCALE_REPORT.md`. Full-scale run deferred. |
 | 2 — Backend scale targets & fixes | ✅ Done | 8/9 targets pass; last-known-good resilience = accepted limitation; absolute p99@5k deferred to 2-machine env. |
-| 3 — UI redesign | ⏳ Ready to start | Phase 2 complete. Needs go-ahead. |
+| 3 — UI redesign | 🔶 In progress | Scoped to 3 worst workflows. Design system + Flags table/search/kill DONE (all quality bars pass). Other screens pending. |
 
 ## Done
 

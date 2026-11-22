@@ -17,3 +17,6 @@ __pycache__/
 # Scale-harness output (benchmark results are regenerated, not committed)
 load_tests/results/
 scale_results/
+
+# Local-only full-page baseline captures (large)
+docs/ui_baseline/*.png

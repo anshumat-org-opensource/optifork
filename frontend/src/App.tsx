@@ -463,10 +463,18 @@ export default function App() {
           {activeTab === "flags" && (
             <div className="space-y-6">
               {flagSubTab === "manage" && (
-                <div className="space-y-6">
-                  <ProtectedRoute user={user} section="feature_flags" permission="manage">
-                    <CreateFlag />
-                  </ProtectedRoute>
+                <div className="space-y-4">
+                  {/* Create is tucked behind a disclosure so the searchable table is primary. */}
+                  {(user.permissions.feature_flags.manage) && (
+                    <details className="mx-auto max-w-6xl rounded-lg border border-default bg-surface shadow-sm">
+                      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-primary hover:bg-surface-2">
+                        ＋ New flag
+                      </summary>
+                      <div className="border-t border-default p-4">
+                        <CreateFlag />
+                      </div>
+                    </details>
+                  )}
                   <ProtectedRoute user={user} section="feature_flags" permission="view">
                     <ListFlags />
                   </ProtectedRoute>

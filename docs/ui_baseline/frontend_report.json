@@ -1,0 +1,100 @@
+{
+  "timestamp": "2026-11-21T20:04:10.331Z",
+  "config": {
+    "frontendUrl": "http://127.0.0.1:4173",
+    "cpuThrottle": 4,
+    "viewport": "1280x800",
+    "headless": true
+  },
+  "bundle": {
+    "distDir": "/Users/anupamsingh/Documents/mygit/optifork/frontend/dist",
+    "files": [
+      {
+        "file": "assets/index-D_nU94Su.js",
+        "rawBytes": 367847,
+        "gzipBytes": 91040
+      }
+    ],
+    "totalRawBytes": 367847,
+    "totalGzipBytes": 91040,
+    "exists": true
+  },
+  "pages": [
+    {
+      "page": "Feature Flags (initial load)",
+      "timeToReadyMs": 726,
+      "lcp": 156,
+      "cls": 0.06738650938272477,
+      "fcp": 104,
+      "ttfb": 1.699999999254942,
+      "inp": 0,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    {
+      "page": "User Segments",
+      "timeToContentMs": 507,
+      "clsDelta": 0,
+      "inpMs": 72,
+      "longTasksDelta": 1
+    },
+    {
+      "page": "Remote Configs",
+      "timeToContentMs": 492,
+      "clsDelta": 0,
+      "inpMs": 72,
+      "longTasksDelta": 0
+    },
+    {
+      "page": "Experiments",
+      "timeToContentMs": 458,
+      "clsDelta": 0,
+      "inpMs": 72,
+      "longTasksDelta": 0
+    },
+    {
+      "page": "AI Experiments",
+      "timeToContentMs": 469,
+      "clsDelta": 0,
+      "inpMs": 72,
+      "longTasksDelta": 0
+    },
+    {
+      "page": "Integration",
+      "timeToContentMs": 449,
+      "clsDelta": 0,
+      "inpMs": 72,
+      "longTasksDelta": 0
+    },
+    {
+      "page": "Data Export",
+      "timeToContentMs": 436,
+      "clsDelta": 0,
+      "inpMs": 72,
+      "longTasksDelta": 0
+    },
+    {
+      "page": "Users",
+      "timeToContentMs": 419,
+      "clsDelta": 0,
+      "inpMs": 72,
+      "longTasksDelta": 0
+    },
+    {
+      "page": "Debug",
+      "timeToContentMs": 431,
+      "clsDelta": 0,
+      "inpMs": 72,
+      "longTasksDelta": 0
+    }
+  ],
+  "scroll": {
+    "page": "Feature Flags list",
+    "frames": 99,
+    "avgFrameMs": 16.608080808073282,
+    "approxFps": 60.21165308359376,
+    "jankFrames": 0,
+    "longTasksDuringScroll": 0
+  },
+  "notes": []
+}
