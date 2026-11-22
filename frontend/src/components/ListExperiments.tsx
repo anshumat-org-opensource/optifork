@@ -1,144 +1,83 @@
 import { useEffect, useState } from "react";
+import { StatusBadge } from "../ui/StatusBadge";
+import { EmptyState } from "../ui/EmptyState";
+import { Skeleton } from "../ui/Skeleton";
+import { Button } from "../ui/Button";
 
-interface Variant {
-  id: number;
-  name: string;
-  traffic_split: number;
+interface Variant { id: number; name: string; traffic_split: number; }
+interface Experiment { id: number; name: string; description: string; status: string; flag_id?: number; variants: Variant[]; }
+interface Flag { id: number; name: string; }
+
+const API = "http://localhost:8000";
+
+function statusTone(s: string): "on" | "partial" | "neutral" {
+  if (s === "active") return "on";
+  if (s === "paused") return "partial";
+  return "neutral";
 }
 
-interface FeatureFlag {
-  id: number;
-  name: string;
-  description: string;
-  rollout: number;
-}
-
-interface Experiment {
-  id: number;
-  name: string;
-  description: string;
-  status: string;
-  flag_id?: number;
-  variants: Variant[];
-}
-
-function ListExperiments() {
+export default function ListExperiments() {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
-  const [flags, setFlags] = useState<FeatureFlag[]>([]);
+  const [flags, setFlags] = useState<Flag[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch experiments and flags in parallel
-        const [experimentsRes, flagsRes] = await Promise.all([
-          fetch("http://localhost:8000/experiments"),
-          fetch("http://localhost:8000/flags")
-        ]);
+  async function load() {
+    setLoading(true); setError("");
+    try {
+      const [er, fr] = await Promise.all([fetch(`${API}/experiments/`), fetch(`${API}/flags?limit=500`)]);
+      if (!er.ok) throw new Error(`HTTP ${er.status}`);
+      setExperiments(await er.json());
+      if (fr.ok) setFlags(await fr.json());
+    } catch {
+      setError("Couldn't load experiments. Is the API running? Try again.");
+    } finally { setLoading(false); }
+  }
+  useEffect(() => { load(); }, []);
 
-        if (experimentsRes.ok) {
-          const experimentsData = await experimentsRes.json();
-          setExperiments(experimentsData);
-        }
-
-        if (flagsRes.ok) {
-          const flagsData = await flagsRes.json();
-          setFlags(flagsData);
-        }
-
-        if (!experimentsRes.ok) {
-          const data = await experimentsRes.json();
-          throw new Error(data.detail || "Failed to load experiments");
-        }
-      } catch (err: any) {
-        setError(err.message);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const getFlagName = (flagId?: number) => {
-    if (!flagId) return null;
-    const flag = flags.find(f => f.id === flagId);
-    return flag ? flag.name : `Flag #${flagId}`;
-  };
+  const flagName = (id?: number) => (id ? flags.find((f) => f.id === id)?.name || `Flag #${id}` : null);
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div>
-              <h2 className="text-2xl font-medium text-gray-900">Active Experiments</h2>
-              <p className="text-gray-600 text-sm">Manage and monitor your A/B tests</p>
-            </div>
+    <div className="mx-auto max-w-6xl">
+      <div className="rounded-lg border border-default bg-surface shadow-sm">
+        <div className="flex items-center justify-between border-b border-default px-4 py-3">
+          <div>
+            <h2 className="text-base font-semibold text-content">Experiments</h2>
+            <p className="text-xs text-content-muted">A/B tests and their variant splits.</p>
           </div>
+          <Button onClick={load} disabled={loading}>{loading ? "Loading…" : "Refresh"}</Button>
         </div>
 
-        <div className="p-6">
-          {error && (
-            <div className="mb-6 p-4 bg-gray-50 border border-gray-200">
-              <p className="text-gray-700 font-medium">{error}</p>
-            </div>
-          )}
-
-          {experiments.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="text-xl font-medium text-gray-800 mb-2">No Experiments Yet</h3>
-              <p className="text-gray-600">Create your first experiment to get started with A/B testing</p>
-            </div>
+        <div className="p-4">
+          {loading ? (
+            <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}</div>
+          ) : error ? (
+            <div className="py-10 text-center"><p className="text-sm text-danger">{error}</p><div className="mt-3"><Button onClick={load}>Retry</Button></div></div>
+          ) : experiments.length === 0 ? (
+            <EmptyState icon="🧪" title="No experiments yet" hint="Create one from the form above to start A/B testing." />
           ) : (
-            <div className="grid gap-6">
+            <div className="space-y-3">
               {experiments.map((exp) => (
-                <div key={exp.id} className="border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-medium text-gray-800 mb-1">{exp.name}</h3>
-                        {exp.description && (
-                          <p className="text-gray-600 mb-2">{exp.description}</p>
-                        )}
-                        <div className="flex items-center space-x-4 text-sm">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${
-                            exp.status === 'active' 
-                              ? 'bg-gray-100 text-gray-800'
-                              : exp.status === 'draft'
-                              ? 'bg-gray-100 text-gray-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {exp.status}
-                          </span>
-                          {getFlagName(exp.flag_id) && (
-                            <div className="flex items-center space-x-1 text-gray-600">
-                              <span className="font-medium">{getFlagName(exp.flag_id)}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-800 mb-3">Variants & Traffic Split</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {exp.variants.map((variant) => (
-                          <div key={variant.id} className="bg-gray-50 p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-medium text-gray-800">{variant.name}</h5>
-                              <span className="text-lg font-medium text-gray-800">
-                                {(variant.traffic_split * 100).toFixed(1)}%
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 h-2">
-                              <div 
-                                className="bg-gray-600 h-2 transition-all duration-300"
-                                style={{ width: `${variant.traffic_split * 100}%` }}
-                              ></div>
-                            </div>
+                <div key={exp.id} className="rounded-md border border-default p-4 hover:bg-surface-2">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-content">{exp.name}</h3>
+                    <StatusBadge tone={statusTone(exp.status)}>{exp.status}</StatusBadge>
+                    {flagName(exp.flag_id) && <span className="text-xs text-content-muted">gated by <span className="font-medium text-content">{flagName(exp.flag_id)}</span></span>}
+                  </div>
+                  {exp.description && <p className="mb-3 line-clamp-2 text-sm text-content-muted">{exp.description}</p>}
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {exp.variants.map((v) => {
+                      const pct = v.traffic_split * 100;
+                      return (
+                        <div key={v.id} className="rounded-md bg-surface-2 p-3">
+                          <div className="mb-1.5 flex items-center justify-between">
+                            <span className="text-sm font-medium text-content">{v.name}</span>
+                            <span className="text-sm tabular-nums text-content-muted">{pct.toFixed(1)}%</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="h-1.5 rounded-full bg-surface"><div className="h-1.5 rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -149,5 +88,3 @@ function ListExperiments() {
     </div>
   );
 }
-
-export default ListExperiments;

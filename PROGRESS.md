@@ -17,8 +17,12 @@ table, search wired to `GET /flags?search=`). Other screens remain on old stylin
 - [x] Step 3 (flags) — rebuilt Feature Flags screen: searchable + virtualized + paginated table,
   per-row **Kill** with impact-preview confirm, status badges, create tucked behind "＋ New flag".
   All states (loading/error/empty/no-results/long-values/10K). Review (Step 4) done for this screen.
-- [ ] Remaining screens (Segments, Configs, Experiments, Exposures, Test, Create internals) — migrate
-  onto the design system next if in scope.
+- [x] Migrated **Segments, Configs, Experiments (list + results), Exposures** onto the design
+  system (status badges, condition chips, stat tiles, virtualized exposure log, delete via
+  confirm dialog + toasts). All screens **axe 0 violations** (`frontend_bench/axe_all.mjs`),
+  responsive at 1280px (fixed a flex-overflow with `min-w-0`). Screenshots in `docs/ui_redesign/`.
+- [ ] Still on old styling (lower priority): CreateFlag/CreateExperiment/AssignUser internals,
+  TestFlag, AI Experiments, Integration, Users, Debug.
 
 ## Phase status
 

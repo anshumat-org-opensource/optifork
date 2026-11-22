@@ -456,9 +456,9 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <Header user={user} onLogout={handleLogout} />
-        <main className="flex-1 p-6 bg-white">
+        <main className="flex-1 p-6 bg-white min-w-0 overflow-x-hidden">
           {/* Feature Flags Section */}
           {activeTab === "flags" && (
             <div className="space-y-6">

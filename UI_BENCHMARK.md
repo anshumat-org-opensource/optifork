@@ -181,9 +181,22 @@ Measured via `frontend_bench/bench.mjs` (web-vitals) and `frontend_bench/axe_sca
   these (no one-off styling). States covered: loading (skeleton), error (+retry), empty, no-search-
   results, long names/values (truncate + tooltip), many rows (virtualized + paginated).
 
-### Not redesigned yet (remaining workflows)
-Segments, Configs, Experiments (setup/results), Exposures, Test, Create-flag internals — still on
-the old styling. They can be migrated onto the same design system next, workflow by workflow.
+### Migrated onto the design system (follow-up)
+Rebuilt on the same tokens/components (screenshots `docs/ui_redesign/{segments,configs,
+experiment-results,exposures}.png`):
+- **User Segments** — card list with condition chips + "N conditions" badge; create/edit on
+  design-system inputs; **Delete via confirm dialog** (was `window.confirm`); toasts.
+- **Remote Configs** — type badges, default-value preview, inline evaluate panel, segment-override
+  modal; create/edit with typed validation; **delete-confirm**; toasts.
+- **Flag Exposures** — stat tiles (total/enabled/disabled/rate) + virtualized log table with status badges.
+- **Experiments** — list (status badges + variant split bars) and results (per-variant table).
+
+All pass **axe: 0 violations** across Flags, Segments, Configs, Experiments, Exposures
+(`frontend_bench/axe_all.mjs`), and fit at **1280 px** (fixed a flex-overflow with `min-w-0`).
+
+### Still on old styling (lower priority)
+CreateFlag / CreateExperiment / AssignUserToVariant internals, TestFlag, AI Experiments,
+Integration, Users, Debug. These still work; migrate onto the design system if in scope.
 
 ## UI ideas — not built (parked; populated during redesign)
 

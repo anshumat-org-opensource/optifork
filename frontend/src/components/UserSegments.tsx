@@ -1,452 +1,184 @@
 import { useEffect, useState } from "react";
+import { Button } from "../ui/Button";
+import { StatusBadge } from "../ui/StatusBadge";
+import { EmptyState } from "../ui/EmptyState";
+import { Skeleton } from "../ui/Skeleton";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { useToast } from "../ui/Toast";
 
-export interface SegmentCondition {
-  field: string;
-  operator: string;
-  value: any;
-}
-
+export interface SegmentCondition { field: string; operator: string; value: any; }
 export interface UserSegment {
-  id: number;
-  name: string;
-  description?: string;
-  conditions: SegmentCondition[];
-  created_at: string;
-  updated_at: string;
+  id: number; name: string; description?: string; conditions: SegmentCondition[]; created_at: string; updated_at: string;
 }
 
-function UserSegments() {
-  const [segments, setSegments] = useState<UserSegment[]>([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [editingSegment, setEditingSegment] = useState<UserSegment | null>(null);
-  const [createMode, setCreateMode] = useState(false);
+const API = "http://localhost:8000";
+const input = "w-full rounded-md border border-strong bg-surface px-3 py-2 text-sm text-content placeholder:text-content-subtle focus:border-primary focus:outline-none";
 
-  const fetchSegments = async () => {
+const OPERATORS: Record<string, string> = {
+  equals: "equals", not_equals: "does not equal", contains: "contains", not_contains: "does not contain",
+  in: "is one of", not_in: "is not one of", greater_than: "is greater than", less_than: "is less than",
+  greater_than_or_equal: "≥", less_than_or_equal: "≤", starts_with: "starts with", ends_with: "ends with",
+};
+
+export default function UserSegments() {
+  const toast = useToast();
+  const [segments, setSegments] = useState<UserSegment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editing, setEditing] = useState<UserSegment | null>(null);
+  const [createMode, setCreateMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<UserSegment | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function fetchSegments() {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/segments");
-      if (!res.ok) {
-        throw new Error("Failed to fetch segments");
-      }
-      const data = await res.json();
-      setSegments(data);
-      setError("");
-    } catch (err: any) {
-      setError("❌ " + err.message);
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch(`${API}/segments?limit=500`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSegments(await res.json()); setError("");
+    } catch { setError("Couldn't load segments. Is the API running? Try again."); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { fetchSegments(); }, []);
+
+  const startCreate = () => { setEditing({ id: 0, name: "", description: "", conditions: [], created_at: "", updated_at: "" }); setCreateMode(true); };
+  const up = (f: keyof UserSegment, v: any) => editing && setEditing({ ...editing, [f]: v });
+  const addCond = () => editing && setEditing({ ...editing, conditions: [...editing.conditions, { field: "", operator: "equals", value: "" }] });
+  const rmCond = (i: number) => editing && setEditing({ ...editing, conditions: editing.conditions.filter((_, x) => x !== i) });
+  const upCond = (i: number, f: keyof SegmentCondition, v: any) => {
+    if (!editing) return; const c = [...editing.conditions]; c[i][f] = v; setEditing({ ...editing, conditions: c });
   };
 
-  useEffect(() => {
-    fetchSegments();
-  }, []);
-
-  const handleEdit = (segment: UserSegment) => {
-    setEditingSegment({ ...segment });
-    setCreateMode(false);
-  };
-
-  const handleCreate = () => {
-    setEditingSegment({
-      id: 0,
-      name: "",
-      description: "",
-      conditions: [],
-      created_at: "",
-      updated_at: ""
-    });
-    setCreateMode(true);
-  };
-
-  const handleSave = async () => {
-    if (!editingSegment) return;
-    
+  async function save() {
+    if (!editing) return;
+    setSaving(true);
     try {
-      setLoading(true);
-      const url = createMode 
-        ? "http://localhost:8000/segments"
-        : `http://localhost:8000/segments/${editingSegment.id}`;
-      
-      const method = createMode ? "POST" : "PUT";
-      
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editingSegment.name,
-          description: editingSegment.description,
-          conditions: editingSegment.conditions
-        }),
-      });
+      const url = createMode ? `${API}/segments` : `${API}/segments/${editing.id}`;
+      const res = await fetch(url, { method: createMode ? "POST" : "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editing.name, description: editing.description, conditions: editing.conditions }) });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.push("error", d.detail || "Save failed."); return; }
+      toast.push("success", `${createMode ? "Created" : "Updated"} “${editing.name}”.`);
+      setEditing(null); setCreateMode(false); fetchSegments();
+    } finally { setSaving(false); }
+  }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to ${createMode ? 'create' : 'update'} segment`);
-      }
-
-      await fetchSegments();
-      setEditingSegment(null);
-      setCreateMode(false);
-      setError("");
-    } catch (err: any) {
-      setError("❌ " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (segmentId: number) => {
-    if (!window.confirm("Are you sure you want to delete this segment?")) {
-      return;
-    }
-
+  async function doDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      setLoading(true);
-      const response = await fetch(`http://localhost:8000/segments/${segmentId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`${API}/segments/${deleteTarget.id}`, { method: "DELETE" });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.push("error", d.detail || "Delete failed."); }
+      else toast.push("success", `Deleted “${deleteTarget.name}”.`);
+      setDeleteTarget(null); fetchSegments();
+    } finally { setDeleting(false); }
+  }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to delete segment");
-      }
-
-      await fetchSegments();
-      setError("");
-    } catch (err: any) {
-      setError("❌ " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateEditingSegment = (field: keyof UserSegment, value: any) => {
-    if (!editingSegment) return;
-    setEditingSegment({ ...editingSegment, [field]: value });
-  };
-
-  const addCondition = () => {
-    if (!editingSegment) return;
-    setEditingSegment({
-      ...editingSegment,
-      conditions: [...editingSegment.conditions, { field: "", operator: "equals", value: "" }]
-    });
-  };
-
-  const removeCondition = (index: number) => {
-    if (!editingSegment) return;
-    setEditingSegment({
-      ...editingSegment,
-      conditions: editingSegment.conditions.filter((_, i) => i !== index)
-    });
-  };
-
-  const updateCondition = (index: number, field: keyof SegmentCondition, value: any) => {
-    if (!editingSegment) return;
-    const newConditions = [...editingSegment.conditions];
-    newConditions[index][field] = value;
-    setEditingSegment({ ...editingSegment, conditions: newConditions });
-  };
-
-  const getOperatorDisplay = (operator: string) => {
-    const operators = {
-      equals: "equals",
-      not_equals: "does not equal",
-      contains: "contains",
-      not_contains: "does not contain",
-      in: "is one of",
-      not_in: "is not one of",
-      greater_than: "is greater than",
-      less_than: "is less than",
-      greater_than_or_equal: "is greater than or equal to",
-      less_than_or_equal: "is less than or equal to",
-      starts_with: "starts with",
-      ends_with: "ends with"
-    };
-    return operators[operator as keyof typeof operators] || operator;
-  };
-
-  if (editingSegment) {
+  // ---- edit / create form ----
+  if (editing) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white border border-gray-200">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-medium text-gray-900">
-                  {createMode ? "Create User Segment" : "Edit User Segment"}
-                </h2>
-                <p className="text-gray-600 text-sm mt-1">
-                  {createMode ? "Define targeting conditions for user groups" : "Update targeting conditions for this segment"}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingSegment(null);
-                  setCreateMode(false);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
+      <div className="mx-auto max-w-3xl rounded-lg border border-default bg-surface p-6 shadow-sm">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-content">{createMode ? "Create segment" : `Edit “${editing.name}”`}</h2>
+          <button onClick={() => { setEditing(null); setCreateMode(false); }} aria-label="Close" className="rounded p-1 text-content-subtle hover:bg-surface-2 hover:text-content">✕</button>
+        </div>
+        <div className="space-y-5">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-content">Segment name *</label>
+            <input className={input} value={editing.name} onChange={(e) => up("name", e.target.value)} placeholder="e.g. Premium users" />
           </div>
-
-          <div className="p-6">
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Segment Name *</label>
-                <input
-                  type="text"
-                  value={editingSegment.name}
-                  onChange={(e) => updateEditingSegment("name", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                  placeholder="e.g., Premium Users, Beta Testers"
-                  required
-                />
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-content">Description</label>
+            <textarea rows={2} className={input} value={editing.description || ""} onChange={(e) => up("description", e.target.value)} placeholder="Who does this segment target?" />
+          </div>
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-sm font-medium text-content">Conditions <span className="text-content-subtle">(all must match)</span></label>
+              <Button size="sm" onClick={addCond}>+ Add condition</Button>
+            </div>
+            {editing.conditions.length === 0 ? (
+              <div className="rounded-md border border-dashed border-strong bg-surface-2 px-4 py-6 text-center text-sm text-content-muted">
+                No conditions — this segment matches <strong className="text-content">all users</strong>.
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={editingSegment.description || ""}
-                  onChange={(e) => updateEditingSegment("description", e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                  placeholder="Describe who this segment targets..."
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">Targeting Conditions</label>
-                  <button
-                    onClick={addCondition}
-                    className="px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-sm"
-                  >
-                    + Add Condition
-                  </button>
-                </div>
-                
-                <div className="space-y-3">
-                  {editingSegment.conditions.length === 0 ? (
-                    <div className="text-center py-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg">
-                      <p className="text-gray-500">No conditions defined. This segment will match all users.</p>
-                      <button
-                        onClick={addCondition}
-                        className="mt-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-black"
-                      >
-                        Add First Condition
-                      </button>
+            ) : (
+              <div className="space-y-2">
+                {editing.conditions.map((c, i) => (
+                  <div key={i} className="rounded-md border border-default bg-surface-2 p-3">
+                    <div className="mb-2 flex items-center justify-between text-xs text-content-muted">
+                      <span>Condition {i + 1}{i > 0 && <span className="ml-1 text-content-subtle">AND</span>}</span>
+                      <button onClick={() => rmCond(i)} className="text-danger hover:text-danger-hover" aria-label={`Remove condition ${i + 1}`}>Remove</button>
                     </div>
-                  ) : (
-                    editingSegment.conditions.map((condition, index) => (
-                      <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                        <div className="flex justify-between items-start mb-3">
-                          <span className="text-sm font-medium text-gray-700">
-                            Condition {index + 1} {index > 0 && <span className="text-gray-500">AND</span>}
-                          </span>
-                          <button
-                            onClick={() => removeCondition(index)}
-                            className="text-red-500 hover:text-red-700 text-sm"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Field</label>
-                            <input
-                              type="text"
-                              placeholder="e.g., country, plan_type, age"
-                              value={condition.field}
-                              onChange={(e) => updateCondition(index, "field", e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Operator</label>
-                            <select
-                              value={condition.operator}
-                              onChange={(e) => updateCondition(index, "operator", e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            >
-                              <option value="equals">equals</option>
-                              <option value="not_equals">does not equal</option>
-                              <option value="contains">contains</option>
-                              <option value="not_contains">does not contain</option>
-                              <option value="in">is one of</option>
-                              <option value="not_in">is not one of</option>
-                              <option value="greater_than">is greater than</option>
-                              <option value="less_than">is less than</option>
-                              <option value="greater_than_or_equal">is greater than or equal to</option>
-                              <option value="less_than_or_equal">is less than or equal to</option>
-                              <option value="starts_with">starts with</option>
-                              <option value="ends_with">ends with</option>
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Value</label>
-                            {condition.operator === "in" || condition.operator === "not_in" ? (
-                              <input
-                                type="text"
-                                placeholder="value1,value2,value3"
-                                value={Array.isArray(condition.value) ? condition.value.join(",") : condition.value}
-                                onChange={(e) => {
-                                  const values = e.target.value.split(",").map(v => v.trim()).filter(v => v);
-                                  updateCondition(index, "value", values);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                              />
-                            ) : (
-                              <input
-                                type="text"
-                                placeholder="Value to compare against"
-                                value={condition.value}
-                                onChange={(e) => updateCondition(index, "value", e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                      <input className={input} placeholder="field (e.g. country)" value={c.field} onChange={(e) => upCond(i, "field", e.target.value)} />
+                      <select className={input} value={c.operator} onChange={(e) => upCond(i, "operator", e.target.value)}>
+                        {Object.entries(OPERATORS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                      {c.operator === "in" || c.operator === "not_in" ? (
+                        <input className={input} placeholder="a,b,c" value={Array.isArray(c.value) ? c.value.join(",") : c.value}
+                          onChange={(e) => upCond(i, "value", e.target.value.split(",").map((v) => v.trim()).filter(Boolean))} />
+                      ) : (
+                        <input className={input} placeholder="value" value={c.value} onChange={(e) => upCond(i, "value", e.target.value)} />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <div className="flex space-x-3 pt-6 border-t border-gray-200 mt-6">
-              <button
-                onClick={handleSave}
-                disabled={loading || !editingSegment.name.trim()}
-                className="px-6 py-2 bg-gray-900 text-white hover:bg-black font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "Saving..." : (createMode ? "Create Segment" : "Update Segment")}
-              </button>
-              <button
-                onClick={() => {
-                  setEditingSegment(null);
-                  setCreateMode(false);
-                }}
-                className="px-6 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-md"
-              >
-                Cancel
-              </button>
-            </div>
+            )}
           </div>
+        </div>
+        <div className="mt-6 flex gap-2 border-t border-default pt-5">
+          <Button variant="primary" onClick={save} disabled={saving || !editing.name.trim()}>{saving ? "Saving…" : createMode ? "Create segment" : "Save changes"}</Button>
+          <Button variant="secondary" onClick={() => { setEditing(null); setCreateMode(false); }} disabled={saving}>Cancel</Button>
         </div>
       </div>
     );
   }
 
+  // ---- list ----
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white border border-gray-200">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-medium text-gray-900">User Segments</h2>
-              <p className="text-gray-600 text-sm mt-1">Define and manage user targeting segments</p>
-            </div>
-            <button
-              onClick={handleCreate}
-              className="px-4 py-2 bg-gray-900 text-white hover:bg-black font-medium rounded-md"
-            >
-              + Create Segment
-            </button>
+    <div className="mx-auto max-w-6xl">
+      <div className="rounded-lg border border-default bg-surface shadow-sm">
+        <div className="flex items-center justify-between border-b border-default px-4 py-3">
+          <div>
+            <h2 className="text-base font-semibold text-content">User Segments</h2>
+            <p className="text-xs text-content-muted">Reusable targeting rules for flags and configs.</p>
           </div>
+          <Button variant="primary" onClick={startCreate}>+ Create segment</Button>
         </div>
-
-        <div className="p-6">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 font-medium">{error}</p>
-            </div>
-          )}
-
-          {loading && segments.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">Loading segments...</p>
-            </div>
+        <div className="p-4">
+          {loading ? (
+            <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>
+          ) : error ? (
+            <div className="py-10 text-center"><p className="text-sm text-danger">{error}</p><div className="mt-3"><Button onClick={fetchSegments}>Retry</Button></div></div>
           ) : segments.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No User Segments Yet</h3>
-              <p className="text-gray-600 mb-4">Create your first user segment to enable advanced targeting</p>
-              <button
-                onClick={handleCreate}
-                className="px-6 py-2 bg-gray-900 text-white hover:bg-black font-medium rounded-md"
-              >
-                Create Your First Segment
-              </button>
-            </div>
+            <EmptyState icon="👥" title="No segments yet" hint="Create a segment to target groups of users across flags and configs." action={<Button variant="primary" onClick={startCreate}>Create your first segment</Button>} />
           ) : (
-            <div className="space-y-4">
-              {segments.map((segment) => (
-                <div key={segment.id} className="border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900 mb-1">{segment.name}</h3>
-                        {segment.description && (
-                          <p className="text-gray-600 mb-3">{segment.description}</p>
-                        )}
-                        <div className="flex items-center space-x-4 text-sm">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-gray-600">Conditions:</span>
-                            <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
-                              {segment.conditions.length === 0 ? 'All users' : `${segment.conditions.length} condition${segment.conditions.length !== 1 ? 's' : ''}`}
+            <div className="space-y-3">
+              {segments.map((s) => (
+                <div key={s.id} className="rounded-md border border-default p-4 hover:bg-surface-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold text-content">{s.name}</h3>
+                        <StatusBadge tone={s.conditions.length ? "neutral" : "on"}>
+                          {s.conditions.length ? `${s.conditions.length} condition${s.conditions.length !== 1 ? "s" : ""}` : "All users"}
+                        </StatusBadge>
+                      </div>
+                      {s.description && <p className="mb-2 line-clamp-2 text-sm text-content-muted">{s.description}</p>}
+                      {s.conditions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {s.conditions.map((c, i) => (
+                            <span key={i} className="rounded border border-default bg-surface-2 px-2 py-0.5 font-mono text-xs text-content-muted">
+                              <span className="text-primary">{c.field}</span> {OPERATORS[c.operator] || c.operator} <span className="text-success">{Array.isArray(c.value) ? `[${c.value.join(", ")}]` : String(c.value)}</span>
                             </span>
-                          </div>
-                          <div className="text-gray-500 text-xs">
-                            Updated {new Date(segment.updated_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(segment)}
-                          className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium rounded-md transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(segment.id)}
-                          className="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 font-medium rounded-md transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Conditions Display */}
-                    {segment.conditions.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Targeting Conditions</h4>
-                        <div className="space-y-2">
-                          {segment.conditions.map((condition, idx) => (
-                            <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                              <div className="font-mono text-sm text-gray-800">
-                                {idx > 0 && <span className="text-gray-500 text-xs mr-2">AND</span>}
-                                <span className="font-medium text-blue-700">{condition.field}</span>
-                                <span className="text-gray-500 mx-2">{getOperatorDisplay(condition.operator)}</span>
-                                <span className="font-medium text-green-700">
-                                  {Array.isArray(condition.value) 
-                                    ? `[${condition.value.join(', ')}]` 
-                                    : JSON.stringify(condition.value)
-                                  }
-                                </span>
-                              </div>
-                            </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => { setEditing({ ...s }); setCreateMode(false); }}>Edit</Button>
+                      <Button size="sm" variant="danger" onClick={() => setDeleteTarget(s)}>Delete</Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -454,8 +186,11 @@ function UserSegments() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog open={!!deleteTarget} danger busy={deleting} title={deleteTarget ? `Delete “${deleteTarget.name}”?` : ""} confirmLabel="Delete segment"
+        onConfirm={doDelete} onCancel={() => setDeleteTarget(null)}>
+        <p>This removes the segment and any flag/config targeting that references it. This can't be undone.</p>
+      </ConfirmDialog>
     </div>
   );
 }
-
-export default UserSegments;

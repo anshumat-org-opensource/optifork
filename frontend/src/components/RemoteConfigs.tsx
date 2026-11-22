@@ -1,512 +1,192 @@
 import { useEffect, useState } from "react";
+import { Button } from "../ui/Button";
+import { StatusBadge } from "../ui/StatusBadge";
+import { EmptyState } from "../ui/EmptyState";
+import { Skeleton } from "../ui/Skeleton";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { useToast } from "../ui/Toast";
 
 export interface RemoteConfig {
-  id: number;
-  key: string;
-  description?: string;
-  value_type: "string" | "number" | "boolean" | "json";
-  default_value: string;
-  created_at: string;
-  updated_at: string;
+  id: number; key: string; description?: string;
+  value_type: "string" | "number" | "boolean" | "json"; default_value: string;
+  created_at: string; updated_at: string;
 }
-
 export interface ConfigSegment {
-  id: number;
-  config_id: number;
-  segment_id: number;
-  value: string;
-  enabled: boolean;
-  priority: number;
-  segment: {
-    id: number;
-    name: string;
-    description?: string;
-    conditions: any[];
-  };
+  id: number; config_id: number; segment_id: number; value: string; enabled: boolean; priority: number;
+  segment: { id: number; name: string; description?: string; conditions: any[] };
 }
 
-function RemoteConfigs() {
-  const [configs, setConfigs] = useState<RemoteConfig[]>([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [editingConfig, setEditingConfig] = useState<RemoteConfig | null>(null);
-  const [createMode, setCreateMode] = useState(false);
-  const [selectedConfigId, setSelectedConfigId] = useState<number | null>(null);
-  const [configSegments, setConfigSegments] = useState<ConfigSegment[]>([]);
-  const [showSegmentModal, setShowSegmentModal] = useState(false);
-  const [testConfigKey, setTestConfigKey] = useState("");
-  const [testUserId, setTestUserId] = useState("");
-  const [testUserTraits, setTestUserTraits] = useState("");
-  const [testResult, setTestResult] = useState<any>(null);
+const API = "http://localhost:8000";
+const input = "w-full rounded-md border border-strong bg-surface px-3 py-2 text-sm text-content placeholder:text-content-subtle focus:border-primary focus:outline-none";
+const TYPE_LABEL: Record<string, string> = { string: "Text", number: "Number", boolean: "Boolean", json: "JSON" };
 
-  const fetchConfigs = async () => {
+function validate(value: string, t: string): boolean {
+  if (!value) return false;
+  if (t === "number") return !isNaN(Number(value));
+  if (t === "boolean") return ["true", "false", "1", "0", "yes", "no", "on", "off"].includes(value.toLowerCase());
+  if (t === "json") { try { JSON.parse(value); return true; } catch { return false; } }
+  return true;
+}
+
+export default function RemoteConfigs() {
+  const toast = useToast();
+  const [configs, setConfigs] = useState<RemoteConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editing, setEditing] = useState<RemoteConfig | null>(null);
+  const [createMode, setCreateMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<RemoteConfig | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  // test
+  const [tKey, setTKey] = useState(""); const [tUser, setTUser] = useState(""); const [tTraits, setTTraits] = useState("");
+  const [tResult, setTResult] = useState<any>(null);
+  // segments modal
+  const [segFor, setSegFor] = useState<RemoteConfig | null>(null);
+  const [segs, setSegs] = useState<ConfigSegment[]>([]);
+
+  async function fetchConfigs() {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/configs");
-      if (!res.ok) {
-        throw new Error("Failed to fetch remote configs");
-      }
-      const data = await res.json();
-      setConfigs(data);
-      setError("");
-    } catch (err: any) {
-      setError("❌ " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const res = await fetch(`${API}/configs?limit=500`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setConfigs(await res.json()); setError("");
+    } catch { setError("Couldn't load configs. Is the API running? Try again."); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { fetchConfigs(); }, []);
+  useEffect(() => { if (segFor) fetch(`${API}/configs/${segFor.id}/segments`).then((r) => r.json()).then(setSegs).catch(() => setSegs([])); }, [segFor]);
 
-  const fetchConfigSegments = async (configId: number) => {
+  const startCreate = () => { setEditing({ id: 0, key: "", description: "", value_type: "string", default_value: "", created_at: "", updated_at: "" }); setCreateMode(true); };
+  const up = (f: keyof RemoteConfig, v: any) => editing && setEditing({ ...editing, [f]: v });
+
+  async function save() {
+    if (!editing) return;
+    setSaving(true);
     try {
-      const res = await fetch(`http://localhost:8000/configs/${configId}/segments`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch config segments");
-      }
-      const data = await res.json();
-      setConfigSegments(data);
-    } catch (err: any) {
-      setError("❌ " + err.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchConfigs();
-  }, []);
-
-  useEffect(() => {
-    if (selectedConfigId) {
-      fetchConfigSegments(selectedConfigId);
-    }
-  }, [selectedConfigId]);
-
-  const handleEdit = (config: RemoteConfig) => {
-    setEditingConfig({ ...config });
-    setCreateMode(false);
-  };
-
-  const handleCreate = () => {
-    setEditingConfig({
-      id: 0,
-      key: "",
-      description: "",
-      value_type: "string",
-      default_value: "",
-      created_at: "",
-      updated_at: ""
-    });
-    setCreateMode(true);
-  };
-
-  const handleSave = async () => {
-    if (!editingConfig) return;
-    
+      const url = createMode ? `${API}/configs` : `${API}/configs/${editing.id}`;
+      const res = await fetch(url, { method: createMode ? "POST" : "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: editing.key, description: editing.description, value_type: editing.value_type, default_value: editing.default_value }) });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.push("error", d.detail || "Save failed."); return; }
+      toast.push("success", `${createMode ? "Created" : "Updated"} “${editing.key}”.`);
+      setEditing(null); setCreateMode(false); fetchConfigs();
+    } finally { setSaving(false); }
+  }
+  async function doDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      setLoading(true);
-      const url = createMode 
-        ? "http://localhost:8000/configs"
-        : `http://localhost:8000/configs/${editingConfig.id}`;
-      
-      const method = createMode ? "POST" : "PUT";
-      
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: editingConfig.key,
-          description: editingConfig.description,
-          value_type: editingConfig.value_type,
-          default_value: editingConfig.default_value
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to ${createMode ? 'create' : 'update'} config`);
-      }
-
-      await fetchConfigs();
-      setEditingConfig(null);
-      setCreateMode(false);
-      setError("");
-    } catch (err: any) {
-      setError("❌ " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (configId: number) => {
-    if (!window.confirm("Are you sure you want to delete this config?")) {
-      return;
-    }
-
+      const res = await fetch(`${API}/configs/${deleteTarget.id}`, { method: "DELETE" });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.push("error", d.detail || "Delete failed."); }
+      else toast.push("success", `Deleted “${deleteTarget.key}”.`);
+      setDeleteTarget(null); fetchConfigs();
+    } finally { setDeleting(false); }
+  }
+  async function test() {
+    if (!tKey || !tUser) { toast.push("error", "Provide a config key and user ID."); return; }
     try {
-      setLoading(true);
-      const response = await fetch(`http://localhost:8000/configs/${configId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`${API}/configs/evaluate/${encodeURIComponent(tKey)}?user_id=${encodeURIComponent(tUser)}${tTraits ? `&${tTraits}` : ""}`);
+      if (!res.ok) throw new Error();
+      setTResult(await res.json());
+    } catch { toast.push("error", "Evaluation failed — check the key and user."); setTResult(null); }
+  }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to delete config");
-      }
-
-      await fetchConfigs();
-      setError("");
-    } catch (err: any) {
-      setError("❌ " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTestConfig = async () => {
-    if (!testConfigKey || !testUserId) {
-      setError("Please provide both config key and user ID");
-      return;
-    }
-
-    try {
-      const traits = testUserTraits ? `&${testUserTraits}` : "";
-      const res = await fetch(
-        `http://localhost:8000/configs/evaluate/${testConfigKey}?user_id=${testUserId}${traits}`
-      );
-      
-      if (!res.ok) {
-        throw new Error("Failed to evaluate config");
-      }
-      
-      const result = await res.json();
-      setTestResult(result);
-      setError("");
-    } catch (err: any) {
-      setError("❌ " + err.message);
-      setTestResult(null);
-    }
-  };
-
-  const updateEditingConfig = (field: keyof RemoteConfig, value: any) => {
-    if (!editingConfig) return;
-    setEditingConfig({ ...editingConfig, [field]: value });
-  };
-
-  const getValueTypeDisplay = (valueType: string) => {
-    const types = {
-      string: "Text",
-      number: "Number", 
-      boolean: "True/False",
-      json: "JSON Object"
-    };
-    return types[valueType as keyof typeof types] || valueType;
-  };
-
-  const getValuePreview = (value: string, valueType: string) => {
-    if (valueType === "json") {
-      try {
-        const parsed = JSON.parse(value);
-        return JSON.stringify(parsed, null, 2);
-      } catch {
-        return value;
-      }
-    }
-    return value;
-  };
-
-  const validateValue = (value: string, valueType: string): boolean => {
-    switch (valueType) {
-      case "number":
-        return !isNaN(Number(value));
-      case "boolean":
-        return ["true", "false", "1", "0", "yes", "no", "on", "off"].includes(value.toLowerCase());
-      case "json":
-        try {
-          JSON.parse(value);
-          return true;
-        } catch {
-          return false;
-        }
-      default:
-        return true;
-    }
-  };
-
-  if (editingConfig) {
+  // ---- form ----
+  if (editing) {
+    const valid = validate(editing.default_value, editing.value_type);
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white border border-gray-200">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-medium text-gray-900">
-                  {createMode ? "Create Remote Config" : "Edit Remote Config"}
-                </h2>
-                <p className="text-gray-600 text-sm mt-1">
-                  {createMode ? "Create a new configuration value" : "Update configuration settings"}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingConfig(null);
-                  setCreateMode(false);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
+      <div className="mx-auto max-w-3xl rounded-lg border border-default bg-surface p-6 shadow-sm">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-content">{createMode ? "Create config" : `Edit “${editing.key}”`}</h2>
+          <button onClick={() => { setEditing(null); setCreateMode(false); }} aria-label="Close" className="rounded p-1 text-content-subtle hover:bg-surface-2 hover:text-content">✕</button>
+        </div>
+        <div className="space-y-5">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-content">Config key *</label>
+            <input className={input} value={editing.key} onChange={(e) => up("key", e.target.value)} placeholder="e.g. api_timeout" />
           </div>
-
-          <div className="p-6">
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Config Key *</label>
-                <input
-                  type="text"
-                  value={editingConfig.key}
-                  onChange={(e) => updateEditingConfig("key", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                  placeholder="e.g., api_timeout, max_connections, feature_enabled"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Use descriptive names like api_timeout, theme_color, etc.</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={editingConfig.description || ""}
-                  onChange={(e) => updateEditingConfig("description", e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                  placeholder="Describe what this configuration controls..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Value Type *</label>
-                <select
-                  value={editingConfig.value_type}
-                  onChange={(e) => updateEditingConfig("value_type", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                >
-                  <option value="string">String (Text)</option>
-                  <option value="number">Number</option>
-                  <option value="boolean">Boolean (True/False)</option>
-                  <option value="json">JSON Object</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Default Value *</label>
-                {editingConfig.value_type === "boolean" ? (
-                  <select
-                    value={editingConfig.default_value}
-                    onChange={(e) => updateEditingConfig("default_value", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                  >
-                    <option value="true">True</option>
-                    <option value="false">False</option>
-                  </select>
-                ) : editingConfig.value_type === "json" ? (
-                  <textarea
-                    value={editingConfig.default_value}
-                    onChange={(e) => updateEditingConfig("default_value", e.target.value)}
-                    rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500 font-mono text-sm"
-                    placeholder='{"key": "value", "number": 123, "enabled": true}'
-                    required
-                  />
-                ) : (
-                  <input
-                    type={editingConfig.value_type === "number" ? "number" : "text"}
-                    value={editingConfig.default_value}
-                    onChange={(e) => updateEditingConfig("default_value", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                    placeholder={
-                      editingConfig.value_type === "number" ? "123" :
-                      editingConfig.value_type === "string" ? "Default text value" :
-                      "Value"
-                    }
-                    required
-                  />
-                )}
-                
-                {!validateValue(editingConfig.default_value, editingConfig.value_type) && editingConfig.default_value && (
-                  <p className="text-red-600 text-sm mt-1">Invalid value for {editingConfig.value_type} type</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex space-x-3 pt-6 border-t border-gray-200 mt-6">
-              <button
-                onClick={handleSave}
-                disabled={loading || !editingConfig.key.trim() || !editingConfig.default_value || 
-                         !validateValue(editingConfig.default_value, editingConfig.value_type)}
-                className="px-6 py-2 bg-gray-900 text-white hover:bg-black font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "Saving..." : (createMode ? "Create Config" : "Update Config")}
-              </button>
-              <button
-                onClick={() => {
-                  setEditingConfig(null);
-                  setCreateMode(false);
-                }}
-                className="px-6 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-md"
-              >
-                Cancel
-              </button>
-            </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-content">Description</label>
+            <textarea rows={2} className={input} value={editing.description || ""} onChange={(e) => up("description", e.target.value)} placeholder="What does this control?" />
           </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-content">Value type *</label>
+            <select className={input} value={editing.value_type} onChange={(e) => up("value_type", e.target.value)}>
+              <option value="string">Text</option><option value="number">Number</option><option value="boolean">Boolean</option><option value="json">JSON</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-content">Default value *</label>
+            {editing.value_type === "boolean" ? (
+              <select className={input} value={editing.default_value} onChange={(e) => up("default_value", e.target.value)}>
+                <option value="true">true</option><option value="false">false</option>
+              </select>
+            ) : editing.value_type === "json" ? (
+              <textarea rows={5} className={`${input} font-mono`} value={editing.default_value} onChange={(e) => up("default_value", e.target.value)} placeholder='{"limit": 100}' />
+            ) : (
+              <input type={editing.value_type === "number" ? "number" : "text"} className={input} value={editing.default_value} onChange={(e) => up("default_value", e.target.value)} placeholder={editing.value_type === "number" ? "123" : "value"} />
+            )}
+            {!valid && editing.default_value ? <p className="mt-1 text-sm text-danger">Not a valid {editing.value_type} value.</p> : null}
+          </div>
+        </div>
+        <div className="mt-6 flex gap-2 border-t border-default pt-5">
+          <Button variant="primary" onClick={save} disabled={saving || !editing.key.trim() || !valid}>{saving ? "Saving…" : createMode ? "Create config" : "Save changes"}</Button>
+          <Button variant="secondary" onClick={() => { setEditing(null); setCreateMode(false); }} disabled={saving}>Cancel</Button>
         </div>
       </div>
     );
   }
 
+  // ---- list ----
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="bg-white border border-gray-200">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-medium text-gray-900">Remote Configurations</h2>
-              <p className="text-gray-600 text-sm mt-1">Manage dynamic configuration values for your application</p>
-            </div>
-            <button
-              onClick={handleCreate}
-              className="px-4 py-2 bg-gray-900 text-white hover:bg-black font-medium rounded-md"
-            >
-              + Create Config
-            </button>
+    <div className="mx-auto max-w-6xl space-y-4">
+      <div className="rounded-lg border border-default bg-surface shadow-sm">
+        <div className="flex items-center justify-between border-b border-default px-4 py-3">
+          <div>
+            <h2 className="text-base font-semibold text-content">Remote Configs</h2>
+            <p className="text-xs text-content-muted">Typed configuration values with per-segment overrides.</p>
           </div>
+          <Button variant="primary" onClick={startCreate}>+ Create config</Button>
         </div>
 
-        {/* Config Testing Section */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-3">Test Configuration</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <input
-              type="text"
-              placeholder="Config key"
-              value={testConfigKey}
-              onChange={(e) => setTestConfigKey(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-            <input
-              type="text"
-              placeholder="User ID"
-              value={testUserId}
-              onChange={(e) => setTestUserId(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-            <input
-              type="text"
-              placeholder="User traits (country=US&plan=premium)"
-              value={testUserTraits}
-              onChange={(e) => setTestUserTraits(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-            <button
-              onClick={handleTestConfig}
-              className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md text-sm font-medium"
-            >
-              Test Config
-            </button>
+        {/* Test */}
+        <div className="border-b border-default bg-surface-2 px-4 py-3">
+          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-content-subtle">Evaluate a config for a user</div>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
+            <input className={input} placeholder="config key" value={tKey} onChange={(e) => setTKey(e.target.value)} />
+            <input className={input} placeholder="user id" value={tUser} onChange={(e) => setTUser(e.target.value)} />
+            <input className={input} placeholder="traits (country=US&plan=premium)" value={tTraits} onChange={(e) => setTTraits(e.target.value)} />
+            <Button variant="primary" onClick={test}>Evaluate</Button>
           </div>
-          
-          {testResult && (
-            <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">Test Result:</h4>
-              <pre className="text-sm text-gray-700 bg-gray-50 p-3 rounded overflow-x-auto">
-                {JSON.stringify(testResult, null, 2)}
-              </pre>
-            </div>
-          )}
+          {tResult && <pre className="mt-3 overflow-x-auto rounded-md border border-default bg-surface p-3 text-xs text-content">{JSON.stringify(tResult, null, 2)}</pre>}
         </div>
 
-        <div className="p-6">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 font-medium">{error}</p>
-            </div>
-          )}
-
-          {loading && configs.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">Loading configurations...</p>
-            </div>
+        <div className="p-4">
+          {loading ? (
+            <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>
+          ) : error ? (
+            <div className="py-10 text-center"><p className="text-sm text-danger">{error}</p><div className="mt-3"><Button onClick={fetchConfigs}>Retry</Button></div></div>
           ) : configs.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Remote Configurations Yet</h3>
-              <p className="text-gray-600 mb-4">Create your first configuration to store dynamic values</p>
-              <button
-                onClick={handleCreate}
-                className="px-6 py-2 bg-gray-900 text-white hover:bg-black font-medium rounded-md"
-              >
-                Create Your First Config
-              </button>
-            </div>
+            <EmptyState icon="⚙️" title="No configs yet" hint="Create a config to store dynamic, typed values for your app." action={<Button variant="primary" onClick={startCreate}>Create your first config</Button>} />
           ) : (
-            <div className="space-y-4">
-              {configs.map((config) => (
-                <div key={config.id} className="border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-medium text-gray-900">{config.key}</h3>
-                          <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                            {getValueTypeDisplay(config.value_type)}
-                          </span>
-                        </div>
-                        
-                        {config.description && (
-                          <p className="text-gray-600 mb-3">{config.description}</p>
-                        )}
-                        
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-sm text-gray-600">Default Value:</span>
-                            <div className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono">
-                              {config.value_type === "json" ? (
-                                <pre className="whitespace-pre-wrap">{getValuePreview(config.default_value, config.value_type)}</pre>
-                              ) : (
-                                config.default_value
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 text-sm mt-3">
-                          <div className="text-gray-500">
-                            Updated {new Date(config.updated_at).toLocaleDateString()}
-                          </div>
-                        </div>
+            <div className="space-y-3">
+              {configs.map((c) => (
+                <div key={c.id} className="rounded-md border border-default p-4 hover:bg-surface-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold text-content">{c.key}</h3>
+                        <StatusBadge tone="neutral">{TYPE_LABEL[c.value_type]}</StatusBadge>
                       </div>
-                      
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedConfigId(config.id);
-                            setShowSegmentModal(true);
-                          }}
-                          className="px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium rounded-md transition-colors text-sm"
-                        >
-                          Segments
-                        </button>
-                        <button
-                          onClick={() => handleEdit(config)}
-                          className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium rounded-md transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(config.id)}
-                          className="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 font-medium rounded-md transition-colors"
-                        >
-                          Delete
-                        </button>
+                      {c.description && <p className="mb-2 line-clamp-1 text-sm text-content-muted">{c.description}</p>}
+                      <div className="truncate rounded border border-default bg-surface-2 px-2 py-1 font-mono text-xs text-content-muted" title={c.default_value}>
+                        default = {c.default_value}
                       </div>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setSegFor(c)}>Segments</Button>
+                      <Button size="sm" variant="secondary" onClick={() => { setEditing({ ...c }); setCreateMode(false); }}>Edit</Button>
+                      <Button size="sm" variant="danger" onClick={() => setDeleteTarget(c)}>Delete</Button>
                     </div>
                   </div>
                 </div>
@@ -516,60 +196,40 @@ function RemoteConfigs() {
         </div>
       </div>
 
-      {/* Segments Modal */}
-      {showSegmentModal && selectedConfigId && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-4/5 max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Config Segments</h3>
-              <button
-                onClick={() => {
-                  setShowSegmentModal(false);
-                  setSelectedConfigId(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
+      {/* Segments modal */}
+      {segFor && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setSegFor(null); }}>
+          <div role="dialog" aria-modal="true" className="mt-10 w-full max-w-2xl rounded-lg border border-default bg-surface shadow-lg">
+            <div className="flex items-center justify-between border-b border-default px-5 py-3">
+              <h3 className="font-semibold text-content">Segment overrides — {segFor.key}</h3>
+              <button onClick={() => setSegFor(null)} aria-label="Close" className="rounded p-1 text-content-subtle hover:bg-surface-2 hover:text-content">✕</button>
             </div>
-            
-            {configSegments.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600">No segments assigned to this config.</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Use the API or add segment targeting to provide different values for different user groups.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {configSegments.map((cs) => (
-                  <div key={cs.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start">
+            <div className="p-5">
+              {segs.length === 0 ? (
+                <EmptyState icon="🎯" title="No segment overrides" hint="This config returns its default value for everyone." />
+              ) : (
+                <div className="space-y-2">
+                  {segs.map((cs) => (
+                    <div key={cs.id} className="flex items-start justify-between rounded-md border border-default p-3">
                       <div>
-                        <h4 className="font-medium text-gray-900">{cs.segment.name}</h4>
-                        <p className="text-sm text-gray-600 mt-1">Priority: {cs.priority}</p>
-                        <div className="mt-2">
-                          <span className="text-sm text-gray-600">Override Value:</span>
-                          <div className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono">
-                            {cs.value}
-                          </div>
-                        </div>
+                        <div className="font-medium text-content">{cs.segment.name}</div>
+                        <div className="text-xs text-content-muted">priority {cs.priority}</div>
+                        <div className="mt-1 rounded border border-default bg-surface-2 px-2 py-1 font-mono text-xs text-content-muted">{cs.value}</div>
                       </div>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        cs.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {cs.enabled ? 'Enabled' : 'Disabled'}
-                      </span>
+                      <StatusBadge tone={cs.enabled ? "on" : "off"}>{cs.enabled ? "Enabled" : "Disabled"}</StatusBadge>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
+
+      <ConfirmDialog open={!!deleteTarget} danger busy={deleting} title={deleteTarget ? `Delete “${deleteTarget.key}”?` : ""} confirmLabel="Delete config"
+        onConfirm={doDelete} onCancel={() => setDeleteTarget(null)}>
+        <p>This removes the config and its segment overrides. Clients reading this key will get their fallback. This can't be undone.</p>
+      </ConfirmDialog>
     </div>
   );
 }
-
-export default RemoteConfigs;
