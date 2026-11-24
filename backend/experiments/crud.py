@@ -74,9 +74,7 @@ async def assign_user_to_variant(
             .options(selectinload(FeatureFlag.rules))  # ✅ eager load to avoid greenlet error
             .where(FeatureFlag.id == experiment.flag_id)
         )
-        print('flag_result')
         flag = flag_result.scalars().first()
-        print(flag)
         if flag and not evaluate_flag_rules(flag.rules, user_attributes):
             return None  # ❌ Not eligible
 
@@ -135,8 +133,17 @@ async def log_exposure(db: AsyncSession, experiment_id: int, variant_id: int, us
     return log
 
 
-async def get_experiment_results(db: AsyncSession):
-    experiments = await db.execute(select(Experiment).options(selectinload(Experiment.variants)))
+async def get_experiment_results(db: AsyncSession, limit: int = 100, offset: int = 0):
+    # Bounded page — never load every experiment at once (Phase 2 target).
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset or 0))
+    experiments = await db.execute(
+        select(Experiment)
+        .options(selectinload(Experiment.variants))
+        .order_by(Experiment.name)
+        .limit(limit)
+        .offset(offset)
+    )
     experiments = experiments.scalars().all()
     results = []
 
@@ -202,7 +209,6 @@ def evaluate_flag_rules(rules: list, user_attributes: dict) -> bool:
         op = getattr(rule, "op", None) or getattr(rule, "operator", None)
         val = getattr(rule, "value", None)
 
-        print(f"Evaluating Rule → field: {attr}, op: {op}, value: {val}")
         user_val = user_attributes.get(attr)
 
         if op == "equals" and user_val != val:

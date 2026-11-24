@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import hashlib
+import bucketing
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Production imports
@@ -116,6 +117,9 @@ class FeatureFlagIn(BaseModel):
     description: Optional[str] = None
     rollout: float
     rules: Optional[List[RuleIn]] = []
+    # Optional optimistic-concurrency token (the version the client last read). When
+    # provided, the update is rejected with 409 if the flag changed in the meantime.
+    expected_version: Optional[int] = None
 
 class FlagResponse(BaseModel):
     flag: str
@@ -140,8 +144,12 @@ async def create_flag(flag: FeatureFlagIn, db: AsyncSession = Depends(get_db)):
 
 # ✅ List flags
 @app.get("/flags")
-async def list_flags(db: AsyncSession = Depends(get_db)):
-    return await crud.get_all_flags(db)
+async def list_flags(limit: int = 100, offset: int = 0, search: str = None, db: AsyncSession = Depends(get_db)):
+    flags = await crud.get_all_flags(db, limit=limit, offset=offset, search=search)
+    # Serialize to plain dicts instead of returning raw SQLAlchemy ORM objects.
+    # Returning ORM instances to FastAPI's encoder under concurrency segfaulted the
+    # worker (SIGSEGV / exit 139) — isolated in Phase 2 (see SCALE_REPORT.md).
+    return [crud.serialize_flag(f) for f in flags]
 
 # ✅ Update flag
 @app.put("/flags/{flag_name}")
@@ -151,8 +159,13 @@ async def update_flag(flag_name: str, flag: FeatureFlagIn, db: AsyncSession = De
         raise HTTPException(status_code=404, detail="Flag not found")
     if not 0.0 <= flag.rollout <= 1.0:
         raise HTTPException(status_code=400, detail="Rollout must be between 0 and 1")
-    await crud.update_flag(db, flag_name, flag)
-    return {"message": f"Flag '{flag_name}' updated successfully"}
+    result = await crud.update_flag(db, flag_name, flag, expected_version=flag.expected_version)
+    if result is crud.FLAG_UPDATE_CONFLICT:
+        raise HTTPException(
+            status_code=409,
+            detail="Flag was modified by another request (version conflict). Reload the latest version and retry.",
+        )
+    return {"message": f"Flag '{flag_name}' updated successfully", "version": result.version}
 
 # ✅ Get flag exposures
 @app.get("/flags/{flag_name}/exposures")
@@ -221,9 +234,7 @@ async def evaluate_flag(flag_name: str, user_id: str, request: Request, db: Asyn
         selected_segment = matching_segments[0]  # Already sorted by priority
         
         # Apply segment-specific rollout percentage
-        hash_val = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
-        normalized = (hash_val % 10000) / 10000.0
-        enabled = normalized < (selected_segment.rollout_percentage / 100.0)
+        enabled = bucketing.is_enabled(user_id, selected_segment.rollout_percentage / 100.0)
         
         # Log the exposure with segment info
         await crud.log_flag_exposure(db, flag.id, flag.name, user_id, enabled, selected_segment.segment_id)
@@ -243,9 +254,7 @@ async def evaluate_flag(flag_name: str, user_id: str, request: Request, db: Asyn
         return FlagResponse(flag=flag_name, user_id=user_id, enabled=False)
 
     # Apply rollout-based assignment (either no rules, or rules matched)
-    hash_val = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
-    normalized = (hash_val % 10000) / 10000.0
-    enabled = normalized < flag.rollout
+    enabled = bucketing.is_enabled(user_id, flag.rollout)
     
     # Log the exposure
     await crud.log_flag_exposure(db, flag.id, flag.name, user_id, enabled)
@@ -300,9 +309,9 @@ async def create_user_segment(segment: UserSegmentIn, db: AsyncSession = Depends
     )
 
 @app.get("/segments", response_model=List[UserSegmentOut])
-async def list_user_segments(db: AsyncSession = Depends(get_db)):
-    """List all user segments"""
-    segments = await crud.get_all_user_segments(db)
+async def list_user_segments(limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    """List user segments (paginated)"""
+    segments = await crud.get_all_user_segments(db, limit=limit, offset=offset)
     return [
         UserSegmentOut(
             id=segment.id,
@@ -497,9 +506,9 @@ async def create_remote_config(config: RemoteConfigIn, db: AsyncSession = Depend
     )
 
 @app.get("/configs", response_model=List[RemoteConfigOut])
-async def list_remote_configs(db: AsyncSession = Depends(get_db)):
-    """List all remote configurations"""
-    configs = await crud.get_all_remote_configs(db)
+async def list_remote_configs(limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    """List remote configurations (paginated)"""
+    configs = await crud.get_all_remote_configs(db, limit=limit, offset=offset)
     return [
         RemoteConfigOut(
             id=config.id,

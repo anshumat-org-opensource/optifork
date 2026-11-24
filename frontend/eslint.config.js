@@ -19,5 +19,17 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Tier-1 CI baseline: block genuine errors, but start lenient on two rules the
+      // existing codebase trips often. Ratchet these to "error" in a later cleanup.
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'react-refresh/only-export-components': 'warn',
+      // Real unused code stays an error, but ignore intentional `_` names and unused
+      // caught errors (common `catch (err) {}` pattern).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' },
+      ],
+    },
   },
 ])

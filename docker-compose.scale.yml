@@ -1,0 +1,77 @@
+# Scale-harness compose for `make scale-test` (Phase 1).
+#
+# Brings up the production BACKEND image (built from ./backend/Dockerfile — the same
+# image the prod build ships) in front of a production-tuned PostgreSQL, which is the
+# system actually placed under load. Deliberately minimal and self-contained:
+#
+#   * Working /health healthcheck (docker-compose.prod.yml points at /health/ready,
+#     which does not exist because the monitoring router is disabled — see SCALE_REPORT).
+#   * Postgres host port exposed so the harness/operator can inspect the seeded DB.
+#   * No Redis (the cache module is disabled in main.py, so the API doesn't need it).
+#   * Single Uvicorn worker, exactly as the prod Dockerfile CMD runs it (Phase 2 will
+#     test 1x/2x/4x workers for linear scaling).
+#
+# The frontend is served on the host by `vite preview` (the browser calls :8000 directly,
+# which the backend container publishes), so it is not part of this compose.
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: optifork-postgres-scale
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-optifork}
+      POSTGRES_USER: ${POSTGRES_USER:-optifork}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-optifork_secret}
+    ports:
+      - "${POSTGRES_PORT:-15433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-optifork} -d ${POSTGRES_DB:-optifork}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks: [optifork-scale]
+    # Production-representative tuning (sized to fit a laptop).
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=8MB
+      -c random_page_cost=1.1
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile          # the prod backend image
+    container_name: optifork-backend-scale
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-optifork}:${POSTGRES_PASSWORD:-optifork_secret}@postgres:5432/${POSTGRES_DB:-optifork}
+      ENVIRONMENT: production
+      LOG_LEVEL: ${LOG_LEVEL:-WARNING}
+      # Dump a C/Python traceback on fatal signals (SIGSEGV/SIGABRT) for diagnosis.
+      PYTHONFAULTHANDLER: "1"
+      # Uvicorn worker count — honored by the image CMD. Used to demonstrate 1x/2x/4x
+      # scaling (goal.md Phase 2); default 1 so a plain run is single-worker.
+      API_WORKERS: "${API_WORKERS:-1}"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks: [optifork-scale]
+
+networks:
+  optifork-scale:
+    name: optifork-scale-network
+
+volumes:
+  postgres_scale_data:

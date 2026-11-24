@@ -9,6 +9,10 @@ class FeatureFlag(Base):
     name = Column(String, unique=True, index=True)
     description = Column(String)
     rollout = Column(Float)
+    # Optimistic-concurrency token: bumped on every update. An update may pass the
+    # version it read; if it no longer matches, the write is rejected (409) rather
+    # than silently overwriting a concurrent edit. (Phase 2: no lost updates.)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
     rules = relationship("Rule", back_populates="flag", cascade="all, delete-orphan")
     flag_segments = relationship("FlagSegment", back_populates="flag", cascade="all, delete-orphan")
 

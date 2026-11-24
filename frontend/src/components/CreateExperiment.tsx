@@ -181,6 +181,7 @@ function CreateExperiment() {
               <select
                 value={selectedFlagName}
                 onChange={(e) => handleFlagSelection(e.target.value)}
+                aria-label="Link to feature flag"
                 className="w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors"
               >
                 <option value="">Select a feature flag (optional)</option>

@@ -1,6 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import or_, update as sa_update, delete as sa_delete
+
+# Sentinel returned by update_flag when an optimistic-concurrency check fails.
+FLAG_UPDATE_CONFLICT = object()
 
 from models import FeatureFlag, Rule, FlagExposure, UserSegment, FlagSegment, RemoteConfig, ConfigSegment, ConfigExposure
 try:
@@ -17,12 +21,63 @@ async def get_flag_by_name(db: AsyncSession, name: str):
     )
     return result.scalar_one_or_none()
 
-async def get_all_flags(db: AsyncSession):
-    result = await db.execute(
-        select(FeatureFlag)
-        .options(selectinload(FeatureFlag.rules))
-    )
+# Pagination: no list endpoint returns an unbounded collection (Phase 2 target).
+DEFAULT_PAGE_LIMIT = 100
+MAX_PAGE_LIMIT = 500
+
+
+def clamp_pagination(limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
+    """Clamp limit/offset to safe bounds so no query can request an unbounded set."""
+    if limit is None:
+        limit = DEFAULT_PAGE_LIMIT
+    limit = max(1, min(int(limit), MAX_PAGE_LIMIT))
+    offset = max(0, int(offset or 0))
+    return limit, offset
+
+
+def _like_escape(term: str) -> str:
+    """Escape LIKE/ILIKE wildcards so user input is matched literally."""
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+async def get_all_flags(db: AsyncSession, limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0, search: str = None):
+    """List flags (paginated). Optional server-side search on name + description.
+
+    `search` is an approved Phase 2 scope exception (a new filter capability). Case-
+    insensitive substring match; bounded + ordered, so it stays well under the 200 ms
+    target across the 10K-flag dataset.
+    """
+    limit, offset = clamp_pagination(limit, offset)
+    stmt = select(FeatureFlag).options(selectinload(FeatureFlag.rules))
+    if search and search.strip():
+        pattern = f"%{_like_escape(search.strip())}%"
+        stmt = stmt.where(
+            or_(
+                FeatureFlag.name.ilike(pattern, escape="\\"),
+                FeatureFlag.description.ilike(pattern, escape="\\"),
+            )
+        )
+    stmt = stmt.order_by(FeatureFlag.name).limit(limit).offset(offset)
+    result = await db.execute(stmt)
     return result.scalars().all()
+
+
+def serialize_flag(flag) -> dict:
+    """Serialize a FeatureFlag ORM object to a plain, JSON-safe dict.
+
+    Endpoints MUST return the output of this (or equivalent plain data), never raw
+    SQLAlchemy ORM instances: returning ORM objects to FastAPI's encoder segfaults the
+    worker under concurrency (SIGSEGV / exit 139) — root-caused in Phase 2. Assumes
+    `flag.rules` is already loaded (e.g. via selectinload) so no lazy IO is triggered.
+    """
+    return {
+        "id": flag.id,
+        "name": flag.name,
+        "description": flag.description,
+        "rollout": flag.rollout,
+        "version": flag.version,
+        "rules": [{"field": r.field, "op": r.op, "value": r.value} for r in flag.rules],
+    }
 
 async def create_flag(db: AsyncSession, flag_in: FeatureFlagIn):
     flag = FeatureFlag(
@@ -45,33 +100,46 @@ async def create_flag(db: AsyncSession, flag_in: FeatureFlagIn):
     await db.refresh(flag)
     return flag
 
-async def update_flag(db: AsyncSession, flag_name: str, flag_in: FeatureFlagIn):
-    # Get the existing flag
+async def update_flag(db: AsyncSession, flag_name: str, flag_in: FeatureFlagIn, expected_version: int = None):
+    """Update a flag.
+
+    If `expected_version` is given, the update is applied **atomically** only when the
+    flag's current version still matches — otherwise `FLAG_UPDATE_CONFLICT` is returned
+    and nothing is written (no silent overwrite of a concurrent edit). When omitted,
+    behaviour is last-writer-wins (backward compatible), but the version still bumps.
+    """
     existing_flag = await get_flag_by_name(db, flag_name)
     if not existing_flag:
         return None
-    
-    # Update basic fields
-    existing_flag.name = flag_in.name
-    existing_flag.description = flag_in.description
-    existing_flag.rollout = flag_in.rollout
-    
-    # Delete existing rules
-    for rule in existing_flag.rules:
-        await db.delete(rule)
-    
-    # Add new rules
+
+    flag_id = existing_flag.id
+
+    # Atomically bump the scalar fields + version. With expected_version, the WHERE
+    # clause guards against a concurrent writer; rowcount==0 means someone else won.
+    where = [FeatureFlag.id == flag_id]
+    if expected_version is not None:
+        where.append(FeatureFlag.version == expected_version)
+    result = await db.execute(
+        sa_update(FeatureFlag)
+        .where(*where)
+        .values(
+            name=flag_in.name,
+            description=flag_in.description,
+            rollout=flag_in.rollout,
+            version=FeatureFlag.version + 1,
+        )
+    )
+    if result.rowcount == 0:
+        await db.rollback()
+        return FLAG_UPDATE_CONFLICT
+
+    # Replace rules (the guarded version bump above serializes concurrent editors).
+    await db.execute(sa_delete(Rule).where(Rule.flag_id == flag_id))
     for rule in flag_in.rules:
-        db.add(Rule(
-            flag_id=existing_flag.id,
-            field=rule.field,
-            op=rule.op,
-            value=rule.value
-        ))
-    
+        db.add(Rule(flag_id=flag_id, field=rule.field, op=rule.op, value=rule.value))
+
     await db.commit()
-    await db.refresh(existing_flag)
-    return existing_flag
+    return await get_flag_by_name(db, flag_in.name)
 
 async def log_flag_exposure(db: AsyncSession, flag_id: int, flag_name: str, user_id: str, enabled: bool, segment_id: int = None):
     """Log when a user is exposed to a feature flag"""
@@ -86,16 +154,15 @@ async def log_flag_exposure(db: AsyncSession, flag_id: int, flag_name: str, user
     await db.commit()
     return exposure
 
-async def get_flag_exposures(db: AsyncSession, flag_name: str = None, limit: int = 100):
-    """Get flag exposure logs"""
+async def get_flag_exposures(db: AsyncSession, flag_name: str = None, limit: int = 100, offset: int = 0):
+    """Get flag exposure logs (bounded — never unbounded)"""
+    limit, offset = clamp_pagination(limit, offset)
     query = select(FlagExposure).order_by(FlagExposure.timestamp.desc())
-    
+
     if flag_name:
         query = query.where(FlagExposure.flag_name == flag_name)
-    
-    if limit:
-        query = query.limit(limit)
-    
+
+    query = query.limit(limit).offset(offset)
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -129,9 +196,12 @@ async def get_user_segment_by_id(db: AsyncSession, segment_id: int):
     )
     return result.scalar_one_or_none()
 
-async def get_all_user_segments(db: AsyncSession):
-    """Get all user segments"""
-    result = await db.execute(select(UserSegment).order_by(UserSegment.name))
+async def get_all_user_segments(db: AsyncSession, limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
+    """Get user segments (paginated)"""
+    limit, offset = clamp_pagination(limit, offset)
+    result = await db.execute(
+        select(UserSegment).order_by(UserSegment.name).limit(limit).offset(offset)
+    )
     return result.scalars().all()
 
 async def update_user_segment(db: AsyncSession, segment_id: int, segment_in: UserSegmentIn):
@@ -316,12 +386,15 @@ async def get_remote_config_by_id(db: AsyncSession, config_id: int):
     )
     return result.scalar_one_or_none()
 
-async def get_all_remote_configs(db: AsyncSession):
-    """Get all remote configurations"""
+async def get_all_remote_configs(db: AsyncSession, limit: int = DEFAULT_PAGE_LIMIT, offset: int = 0):
+    """Get remote configurations (paginated)"""
+    limit, offset = clamp_pagination(limit, offset)
     result = await db.execute(
         select(RemoteConfig)
         .options(selectinload(RemoteConfig.config_segments).selectinload(ConfigSegment.segment))
         .order_by(RemoteConfig.key)
+        .limit(limit)
+        .offset(offset)
     )
     return result.scalars().all()
 
@@ -489,15 +562,14 @@ async def log_config_exposure(db: AsyncSession, config_id: int, config_key: str,
     await db.commit()
     return exposure
 
-async def get_config_exposures(db: AsyncSession, config_key: str = None, limit: int = 100):
-    """Get config exposure logs"""
+async def get_config_exposures(db: AsyncSession, config_key: str = None, limit: int = 100, offset: int = 0):
+    """Get config exposure logs (bounded — never unbounded)"""
+    limit, offset = clamp_pagination(limit, offset)
     query = select(ConfigExposure).order_by(ConfigExposure.timestamp.desc())
-    
+
     if config_key:
         query = query.where(ConfigExposure.config_key == config_key)
-    
-    if limit:
-        query = query.limit(limit)
-    
+
+    query = query.limit(limit).offset(offset)
     result = await db.execute(query)
     return result.scalars().all()

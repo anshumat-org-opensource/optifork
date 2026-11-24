@@ -19,6 +19,7 @@ import AIExperimentDetails from "./components/AIExperimentDetails";
 import Debug from "./components/Debug";
 import UserSegments from "./components/UserSegments";
 import RemoteConfigs from "./components/RemoteConfigs";
+import { Icon } from "./ui/Icon";
 
 interface User {
   id: string;
@@ -212,7 +213,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">🚩</span>
+                <Icon name="flags" />
                 {!isCollapsed && <span className="ml-3">Feature Flags</span>}
               </button>
               {activeTab === "flags" && !isCollapsed && (
@@ -261,7 +262,7 @@ export default function App() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <span className="text-base">👥</span>
+              <Icon name="segments" />
               {!isCollapsed && <span className="ml-3">User Segments</span>}
             </button>
           )}
@@ -275,7 +276,7 @@ export default function App() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <span className="text-base">⚙️</span>
+              <Icon name="configs" />
               {!isCollapsed && <span className="ml-3">Remote Configs</span>}
             </button>
           )}
@@ -290,7 +291,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">🧪</span>
+                <Icon name="experiments" />
                 {!isCollapsed && <span className="ml-3">Experiments</span>}
               </button>
               {activeTab === "experiments" && !isCollapsed && (
@@ -340,7 +341,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">🤖</span>
+                <Icon name="ai" />
                 {!isCollapsed && <span className="ml-3">AI Experiments</span>}
               </button>
               {activeTab === "ai-experiments" && !isCollapsed && (
@@ -389,7 +390,7 @@ export default function App() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <span className="text-base">🔌</span>
+              <Icon name="integration" />
               {!isCollapsed && <span className="ml-3">Integration</span>}
             </button>
           )}
@@ -404,7 +405,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">📊</span>
+                <Icon name="export" />
                 {!isCollapsed && <span className="ml-3">Data Export</span>}
               </button>
               <button
@@ -415,7 +416,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">👥</span>
+                <Icon name="users" />
                 {!isCollapsed && <span className="ml-3">Users</span>}
               </button>
               <button
@@ -426,7 +427,7 @@ export default function App() {
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-base">🐛</span>
+                <Icon name="debug" />
                 {!isCollapsed && <span className="ml-3">Debug</span>}
               </button>
             </>
@@ -440,7 +441,7 @@ export default function App() {
               onClick={handleLogout}
               className="w-full flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
             >
-              <span>🚪</span>
+              <Icon name="logout" />
               <span className="ml-3">Logout</span>
             </button>
           ) : (
@@ -449,24 +450,32 @@ export default function App() {
               className="w-full flex justify-center py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
               title="Logout"
             >
-              🚪
+              <Icon name="logout" />
             </button>
           )}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <Header user={user} onLogout={handleLogout} />
-        <main className="flex-1 p-6 bg-white">
+        <main className="flex-1 p-6 bg-white min-w-0 overflow-x-hidden">
           {/* Feature Flags Section */}
           {activeTab === "flags" && (
             <div className="space-y-6">
               {flagSubTab === "manage" && (
-                <div className="space-y-6">
-                  <ProtectedRoute user={user} section="feature_flags" permission="manage">
-                    <CreateFlag />
-                  </ProtectedRoute>
+                <div className="space-y-4">
+                  {/* Create is tucked behind a disclosure so the searchable table is primary. */}
+                  {(user.permissions.feature_flags.manage) && (
+                    <details className="mx-auto max-w-6xl rounded-lg border border-default bg-surface shadow-sm">
+                      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-primary hover:bg-surface-2">
+                        ＋ New flag
+                      </summary>
+                      <div className="border-t border-default p-4">
+                        <CreateFlag />
+                      </div>
+                    </details>
+                  )}
                   <ProtectedRoute user={user} section="feature_flags" permission="view">
                     <ListFlags />
                   </ProtectedRoute>
