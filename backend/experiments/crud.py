@@ -2,14 +2,14 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from experiments.models import Experiment, Variant, UserAssignment, ExposureLog
 from experiments.schemas import ExperimentCreate
+from experiments.assignment import variant_for
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from models import FeatureFlag as Flag
-from models import FeatureFlag 
-import random
+from models import FeatureFlag
 import json
 
 
@@ -65,59 +65,52 @@ async def assign_user_to_variant(
     # Get experiment (with flag_id)
     exp_result = await db.execute(select(Experiment).where(Experiment.id == experiment_id))
     experiment = exp_result.scalars().first()
-    
+    if not experiment:
+        return None
 
-    # Check if user is eligible based on targeting flag
+    # Eligibility: a linked flag gates who can enter the experiment (unchanged).
     if experiment.flag_id:
         flag_result = await db.execute(
             select(FeatureFlag)
-            .options(selectinload(FeatureFlag.rules))  # ✅ eager load to avoid greenlet error
+            .options(selectinload(FeatureFlag.rules))  # eager load to avoid greenlet error
             .where(FeatureFlag.id == experiment.flag_id)
         )
         flag = flag_result.scalars().first()
         if flag and not evaluate_flag_rules(flag.rules, user_attributes):
             return None  # ❌ Not eligible
 
-
-    # Already assigned?
-        result = await db.execute(
-            select(UserAssignment)
-            .options(selectinload(UserAssignment.variant))  # <- eager load the variant
-            .where(
-                UserAssignment.experiment_id == experiment_id,
-                UserAssignment.user_id == user_id
-            )
-        )
-        assignment = result.scalars().first()
-        if assignment:
-            return assignment.variant
-
-
-    # Fetch variants
+    # Honor an existing assignment, for ALL experiments (previously this was mistakenly
+    # nested inside the flag check, so flag-less experiments re-rolled every call). This
+    # also keeps users assigned under the old random logic on their current variant.
     result = await db.execute(
-        select(Variant).where(Variant.experiment_id == experiment_id)
+        select(UserAssignment)
+        .options(selectinload(UserAssignment.variant))
+        .where(
+            UserAssignment.experiment_id == experiment_id,
+            UserAssignment.user_id == user_id,
+        )
+    )
+    existing = result.scalars().first()
+    if existing:
+        return existing.variant
+
+    # Fetch variants in a stable order so the cumulative split is deterministic.
+    result = await db.execute(
+        select(Variant).where(Variant.experiment_id == experiment_id).order_by(Variant.id)
     )
     variants = result.scalars().all()
     if not variants:
         return None
 
-    # Assign using traffic split
-    rnd = random.random()
-    acc = 0.0
-    for variant in variants:
-        acc += variant.traffic_split
-        if rnd <= acc:
-            assigned_variant = variant
-            break
-    else:
-        assigned_variant = variants[-1]
+    # Deterministic assignment: hash(experiment_id : user_id) → bucket → cumulative split.
+    # Same user + experiment always resolves to the same variant (no RNG, reproducible).
+    assigned_variant = variant_for(str(experiment.id), user_id, variants)
 
-    new_assignment = UserAssignment(
+    db.add(UserAssignment(
         experiment_id=experiment_id,
         variant_id=assigned_variant.id,
-        user_id=user_id
-    )
-    db.add(new_assignment)
+        user_id=user_id,
+    ))
     await db.commit()
     return assigned_variant
 
