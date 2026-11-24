@@ -1,0 +1,17 @@
+# Tier-1 Python lint baseline for the OptiFork backend.
+#
+# Deliberately conservative: enforce only genuine-bug rules so CI is green on the
+# current code and stays fast, while still catching real mistakes in new PRs:
+#   E9  — syntax errors
+#   F63 — invalid comparisons (e.g. `is` with a literal)
+#   F7  — misplaced statements (break/return outside loop/function)
+#   F82 — undefined names
+#
+# Ratchet later (separate cleanup PR): add F401 (unused imports — 44 today),
+# F841 (unused vars), and `ruff format`.
+target-version = "py311"
+line-length = 120
+extend-exclude = ["venv", ".venv", "frontend", "backend/data"]
+
+[lint]
+select = ["E9", "F63", "F7", "F82"]

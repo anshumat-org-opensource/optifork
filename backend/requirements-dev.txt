@@ -1,3 +1,13 @@
-# Dev/test-only dependencies (NOT installed into the production image).
-# Run: pip install -r requirements.txt -r requirements-dev.txt
+# Dev/test-only dependencies — enough to run the backend unit tests + lint in CI.
+# NOT installed into the production image.
+#   Run locally: pip install -r requirements.txt -r requirements-dev.txt
+#   CI installs just this file (the unit tests don't need the full prod stack).
 pytest>=8,<9
+ruff>=0.6
+
+# Runtime libraries the tested modules import (a subset of requirements.txt).
+# Pinned to the same versions as production for fidelity.
+SQLAlchemy[asyncio]==2.0.23
+aiosqlite==0.19.0
+pydantic==2.5.0
+greenlet
